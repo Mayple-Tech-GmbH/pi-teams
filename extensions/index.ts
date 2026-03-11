@@ -17,8 +17,11 @@ import { spawnSync } from "node:child_process";
 let availableModelsCache: Array<{ provider: string; model: string }> | null = null;
 let modelsCacheTime = 0;
 const MODELS_CACHE_TTL = 60000; // 1 minute
+const SETTINGS_CACHE_TTL = 60000; // 1 minute
 const HEARTBEAT_STALE_MS = 90000;
 const STARTUP_STALL_MS = 60000;
+let settingsCache: { defaultModel?: string; defaultProvider?: string } | null = null;
+let settingsCacheTime = 0;
 
 /**
  * Query available models from pi --list-models
@@ -142,6 +145,57 @@ function resolveModelWithProvider(modelName: string): string | null {
   }
 
   return null;
+}
+
+/**
+ * Read global Pi default model from ~/.pi/agent/settings.json
+ */
+function getGlobalDefaultModel(): string | null {
+  const now = Date.now();
+  if (settingsCache && now - settingsCacheTime < SETTINGS_CACHE_TTL) {
+    const cachedModel = settingsCache.defaultModel;
+    if (!cachedModel) return null;
+    if (cachedModel.includes("/")) return cachedModel;
+
+    const resolvedCached = resolveModelWithProvider(cachedModel);
+    if (resolvedCached) return resolvedCached;
+
+    return settingsCache.defaultProvider ? `${settingsCache.defaultProvider}/${cachedModel}` : cachedModel;
+  }
+
+  try {
+    const settingsPath = path.join(process.env.HOME || "", ".pi", "agent", "settings.json");
+    if (!fs.existsSync(settingsPath)) {
+      settingsCache = {};
+      settingsCacheTime = now;
+      return null;
+    }
+
+    const parsed = JSON.parse(fs.readFileSync(settingsPath, "utf-8")) as {
+      defaultModel?: string;
+      defaultProvider?: string;
+    };
+
+    settingsCache = {
+      defaultModel: parsed.defaultModel,
+      defaultProvider: parsed.defaultProvider,
+    };
+    settingsCacheTime = now;
+
+    if (!parsed.defaultModel) return null;
+    if (parsed.defaultModel.includes("/")) return parsed.defaultModel;
+
+    const resolved = resolveModelWithProvider(parsed.defaultModel);
+    if (resolved) return resolved;
+
+    return parsed.defaultProvider
+      ? `${parsed.defaultProvider}/${parsed.defaultModel}`
+      : parsed.defaultModel;
+  } catch (_e) {
+    settingsCache = {};
+    settingsCacheTime = now;
+    return null;
+  }
 }
 
 export default function (pi: ExtensionAPI) {
@@ -298,7 +352,8 @@ export default function (pi: ExtensionAPI) {
       separate_windows: Type.Optional(Type.Boolean({ default: false, description: "Open teammates in separate OS windows instead of panes" })),
     }),
     async execute(toolCallId, params: any, signal, onUpdate, ctx) {
-      const config = teams.createTeam(params.team_name, "local-session", "lead-agent", params.description, params.default_model, params.separate_windows);
+      const effectiveDefaultModel = params.default_model || getGlobalDefaultModel() || undefined;
+      const config = teams.createTeam(params.team_name, "local-session", "lead-agent", params.description, effectiveDefaultModel, params.separate_windows);
       return {
         content: [{ type: "text", text: `Team ${params.team_name} created.` }],
         details: { config },
@@ -333,7 +388,8 @@ export default function (pi: ExtensionAPI) {
       }
 
       const teamConfig = await teams.readConfig(safeTeamName);
-      let chosenModel = params.model || teamConfig.defaultModel;
+      const inheritedDefaultModel = teamConfig.defaultModel || getGlobalDefaultModel() || undefined;
+      let chosenModel = params.model || inheritedDefaultModel;
 
       // Resolve model to provider/model format
       if (chosenModel) {
@@ -342,9 +398,9 @@ export default function (pi: ExtensionAPI) {
           const resolved = resolveModelWithProvider(chosenModel);
           if (resolved) {
             chosenModel = resolved;
-          } else if (teamConfig.defaultModel && teamConfig.defaultModel.includes('/')) {
-            // Fall back to team default provider
-            const [provider] = teamConfig.defaultModel.split('/');
+          } else if (inheritedDefaultModel && inheritedDefaultModel.includes('/')) {
+            // Fall back to inherited default provider
+            const [provider] = inheritedDefaultModel.split('/');
             chosenModel = `${provider}/${chosenModel}`;
           }
         }
