@@ -20,6 +20,7 @@ const MODELS_CACHE_TTL = 60000; // 1 minute
 const SETTINGS_CACHE_TTL = 60000; // 1 minute
 const HEARTBEAT_STALE_MS = 90000;
 const STARTUP_STALL_MS = 60000;
+const OPENAI_CODEX_PROVIDER = "openai-codex";
 let settingsCache: { defaultModel?: string; defaultProvider?: string } | null = null;
 let settingsCacheTime = 0;
 
@@ -145,6 +146,44 @@ function resolveModelWithProvider(modelName: string): string | null {
   }
 
   return null;
+}
+
+function stripProvider(modelName: string): string {
+  return modelName.includes("/") ? modelName.split("/").slice(1).join("/") : modelName;
+}
+
+function resolveOpenAICodexModel(preferredModel?: string | null): string | null {
+  const openAICodexModels = getAvailableModels().filter(
+    (model) => model.provider === OPENAI_CODEX_PROVIDER,
+  );
+
+  if (openAICodexModels.length === 0) {
+    return null;
+  }
+
+  const preferredNames = [preferredModel, "gpt-5.4", "gpt-5.3-codex"]
+    .filter((value): value is string => !!value)
+    .map((value) => stripProvider(value).toLowerCase());
+
+  for (const preferredName of preferredNames) {
+    const exactMatch = openAICodexModels.find(
+      (model) => model.model.toLowerCase() === preferredName,
+    );
+    if (exactMatch) {
+      return `${exactMatch.provider}/${exactMatch.model}`;
+    }
+  }
+
+  for (const preferredName of preferredNames) {
+    const partialMatch = openAICodexModels.find((model) =>
+      model.model.toLowerCase().includes(preferredName),
+    );
+    if (partialMatch) {
+      return `${partialMatch.provider}/${partialMatch.model}`;
+    }
+  }
+
+  return `${openAICodexModels[0].provider}/${openAICodexModels[0].model}`;
 }
 
 /**
@@ -352,7 +391,9 @@ export default function (pi: ExtensionAPI) {
       separate_windows: Type.Optional(Type.Boolean({ default: false, description: "Open teammates in separate OS windows instead of panes" })),
     }),
     async execute(toolCallId, params: any, signal, onUpdate, ctx) {
-      const effectiveDefaultModel = params.default_model || getGlobalDefaultModel() || undefined;
+      const effectiveDefaultModel = params.default_model
+        || resolveOpenAICodexModel(getGlobalDefaultModel())
+        || undefined;
       const config = teams.createTeam(params.team_name, "local-session", "lead-agent", params.description, effectiveDefaultModel, params.separate_windows);
       return {
         content: [{ type: "text", text: `Team ${params.team_name} created.` }],
@@ -388,11 +429,12 @@ export default function (pi: ExtensionAPI) {
       }
 
       const teamConfig = await teams.readConfig(safeTeamName);
-      const inheritedDefaultModel = teamConfig.defaultModel || getGlobalDefaultModel() || undefined;
+      const inheritedDefaultModel = resolveOpenAICodexModel(teamConfig.defaultModel || getGlobalDefaultModel())
+        || undefined;
       let chosenModel = params.model || inheritedDefaultModel;
 
       // Resolve model to provider/model format
-      if (chosenModel) {
+      if (chosenModel && params.model) {
         if (!chosenModel.includes('/')) {
           // Try to resolve using available models from pi --list-models
           const resolved = resolveModelWithProvider(chosenModel);

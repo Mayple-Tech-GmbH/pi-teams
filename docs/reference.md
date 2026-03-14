@@ -23,10 +23,12 @@ Complete documentation of all tools, parameters, and automated behavior.
 
 Start a new team with optional default model.
 
+If you do not pass `default_model`, pi-teams now defaults the team to an available `openai-codex/*` model.
+
 **Parameters**:
 - `team_name` (required): Name for the team
 - `description` (optional): Team description
-- `default_model` (optional): Default AI model for all teammates (e.g., `gpt-4o`, `haiku`, `glm-4.7`)
+- `default_model` (optional): Default AI model for all teammates. If omitted, pi-teams picks an available `openai-codex/*` model.
 
 **Examples**:
 ```javascript
@@ -86,8 +88,9 @@ Launch a new agent into a terminal pane with a role and instructions.
 - `plan_mode_required` (optional): If `true`, teammate must submit plans for approval
 
 **Model Options**:
-- Any model available in your pi configuration
-- Common models: `gpt-4o`, `haiku` (Anthropic), `glm-4.7`, `glm-5` (Zhipu AI)
+- By default, teammates inherit an `openai-codex/*` team model
+- Passing `model` explicitly still overrides that default
+- Any model available in your pi configuration can still be used when you pass `model`
 
 **Thinking Levels**:
 - `off`: No thinking blocks (fastest)

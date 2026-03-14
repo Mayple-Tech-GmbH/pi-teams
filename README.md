@@ -22,11 +22,11 @@ pi install npm:pi-teams
 
 ```bash
 # 1. Start a team (inside tmux, Zellij, or iTerm2)
-"Create a team named 'my-team' using 'gpt-4o'"
+"Create a team named 'my-team'"
 
 # 2. Spawn teammates
 "Spawn 'security-bot' to scan for vulnerabilities"
-"Spawn 'frontend-dev' using 'haiku' for quick iterations"
+"Spawn 'frontend-dev'"
 
 # 3. Create and assign tasks
 "Create a task for security-bot: 'Audit auth endpoints'"
@@ -58,7 +58,7 @@ pi install npm:pi-teams
 > **You:** "Create a team named 'my-app-audit' for reviewing the codebase."
 
 **Set a default model for the whole team:**
-> **You:** "Create a team named 'Research' and use 'gpt-4o' for everyone."
+> **You:** "Create a team named 'Research' and use 'openai-codex/gpt-5.4' for everyone."
 
 **Start a team in "Separate Windows" mode:**
 > **You:** "Create a team named 'Dev' and open everyone in separate windows."
@@ -75,13 +75,13 @@ pi install npm:pi-teams
 *(Requires separate_windows mode enabled or iTerm2/WezTerm)*
 
 **Use a different model:**
-> **You:** "Spawn a teammate named 'speed-bot' using 'haiku' to quickly run some benchmarks."
+> **You:** "Spawn a teammate named 'speed-bot' using 'openai-codex/gpt-5.4' to quickly run some benchmarks."
 
 **Require plan approval:**
 > **You:** "Spawn a teammate named 'refactor-bot' and require plan approval before they make any changes."
 
 **Customize model and thinking level:**
-> **You:** "Spawn a teammate named 'architect-bot' using 'gpt-4o' with 'high' thinking level for deep reasoning."
+> **You:** "Spawn a teammate named 'architect-bot' using 'openai-codex/gpt-5.4' with 'high' thinking level for deep reasoning."
 
 **Smart Model Resolution:**
 When you specify a model name without a provider (e.g., `gemini-2.5-flash`), pi-teams automatically:
@@ -92,7 +92,7 @@ When you specify a model name without a provider (e.g., `gemini-2.5-flash`), pi-
 - Falls back to API-key providers if OAuth providers aren't available
 - Constructs the correct `--model provider/model:thinking` command
 
-> **Example:** Specifying `gemini-2.5-flash` will automatically use `google-gemini-cli/gemini-2.5-flash` if available, saving API costs.
+> Default team and teammate fallbacks now stay on `openai-codex/*` models. Explicit `model` arguments still override that default.
 
 ### 3. Assign Task & Get Approval
 > **You:** "Create a task for security-bot: 'Check the .env.example file for sensitive defaults' and set it to in_progress."
