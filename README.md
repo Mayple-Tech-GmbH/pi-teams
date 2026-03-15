@@ -84,15 +84,13 @@ pi install npm:pi-teams
 > **You:** "Spawn a teammate named 'architect-bot' using 'openai-codex/gpt-5.4' with 'high' thinking level for deep reasoning."
 
 **Smart Model Resolution:**
-When you specify a model name without a provider (e.g., `gemini-2.5-flash`), pi-teams automatically:
+When you specify a model, pi-teams automatically:
 - Queries available models from `pi --list-models`
-- Prioritizes **OAuth/subscription providers** (cheaper/free) over API-key providers:
-  - `google-gemini-cli` (OAuth) is preferred over `google` (API key)
-  - `github-copilot`, `kimi-sub` are preferred over their API-key equivalents
-- Falls back to API-key providers if OAuth providers aren't available
+- Resolves teammates to an available `openai-codex/*` model
+- Coerces non-`openai-codex/*` requests to `openai-codex/*`
 - Constructs the correct `--model provider/model:thinking` command
 
-> Default team and teammate fallbacks now stay on `openai-codex/*` models. Explicit `model` arguments still override that default.
+> Teams and teammates are now enforced to use `openai-codex/*` models.
 
 ### 3. Assign Task & Get Approval
 > **You:** "Create a task for security-bot: 'Check the .env.example file for sensitive defaults' and set it to in_progress."

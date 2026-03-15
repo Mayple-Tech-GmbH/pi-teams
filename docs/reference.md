@@ -23,17 +23,17 @@ Complete documentation of all tools, parameters, and automated behavior.
 
 Start a new team with optional default model.
 
-If you do not pass `default_model`, pi-teams now defaults the team to an available `openai-codex/*` model.
+If you do not pass `default_model`, pi-teams picks an available `openai-codex/*` model.
 
 **Parameters**:
 - `team_name` (required): Name for the team
 - `description` (optional): Team description
-- `default_model` (optional): Default AI model for all teammates. If omitted, pi-teams picks an available `openai-codex/*` model.
+- `default_model` (optional): Preferred model hint. pi-teams always resolves this to an `openai-codex/*` model.
 
 **Examples**:
 ```javascript
 team_create({ team_name: "my-team" })
-team_create({ team_name: "research", default_model: "gpt-4o" })
+team_create({ team_name: "research", default_model: "openai-codex/gpt-5.4" })
 ```
 
 ---
@@ -83,14 +83,14 @@ Launch a new agent into a terminal pane with a role and instructions.
 - `name` (required): Friendly name for the teammate (e.g., "security-bot")
 - `prompt` (required): Instructions for the teammate's role and initial task
 - `cwd` (required): Working directory for the teammate
-- `model` (optional): AI model for this teammate (overrides team default)
+- `model` (optional): Preferred model hint for this teammate. pi-teams always resolves to `openai-codex/*`.
 - `thinking` (optional): Thinking level (`off`, `minimal`, `low`, `medium`, `high`)
 - `plan_mode_required` (optional): If `true`, teammate must submit plans for approval
 
 **Model Options**:
 - By default, teammates inherit an `openai-codex/*` team model
-- Passing `model` explicitly still overrides that default
-- Any model available in your pi configuration can still be used when you pass `model`
+- Passing `model` can influence which `openai-codex/*` model is chosen
+- Non-`openai-codex/*` model inputs are coerced to an available `openai-codex/*` model
 
 **Thinking Levels**:
 - `off`: No thinking blocks (fastest)
@@ -115,7 +115,7 @@ spawn_teammate({
   name: "speed-bot",
   prompt: "Run benchmarks on the API endpoints",
   cwd: "/path/to/project",
-  model: "haiku"
+  model: "openai-codex/gpt-5.4"
 })
 
 // With plan approval
@@ -133,7 +133,7 @@ spawn_teammate({
   name: "architect-bot",
   prompt: "Design the new feature architecture",
   cwd: "/path/to/project",
-  model: "gpt-4o",
+  model: "openai-codex/gpt-5.3-codex",
   thinking: "high"
 })
 ```
@@ -522,17 +522,17 @@ All pi-teams data is stored in your home directory under `~/.pi/`:
 {
   "name": "my-team",
   "description": "Code review team",
-  "defaultModel": "gpt-4o",
+  "defaultModel": "openai-codex/gpt-5.4",
   "members": [
     {
       "name": "security-bot",
-      "model": "gpt-4o",
+      "model": "openai-codex/gpt-5.4",
       "thinking": "medium",
       "planModeRequired": true
     },
     {
       "name": "frontend-dev",
-      "model": "haiku",
+      "model": "openai-codex/gpt-5.3-codex",
       "thinking": "low",
       "planModeRequired": false
     }

@@ -24,6 +24,18 @@ const OPENAI_CODEX_PROVIDER = "openai-codex";
 let settingsCache: { defaultModel?: string; defaultProvider?: string } | null = null;
 let settingsCacheTime = 0;
 
+function runPiCommand(args: string[]) {
+  const spawnArgs = process.argv[1]
+    ? [process.argv[1], ...args]
+    : args;
+  const command = process.argv[1] ? process.execPath : "pi";
+
+  return spawnSync(command, spawnArgs, {
+    encoding: "utf-8",
+    timeout: 10000,
+  });
+}
+
 /**
  * Query available models from pi --list-models
  */
@@ -34,10 +46,7 @@ function getAvailableModels(): Array<{ provider: string; model: string }> {
   }
 
   try {
-    const result = spawnSync("pi", ["--list-models"], {
-      encoding: "utf-8",
-      timeout: 10000,
-    });
+    const result = runPiCommand(["--list-models"]);
 
     if (result.status !== 0 || !result.stdout) {
       return [];
@@ -184,6 +193,16 @@ function resolveOpenAICodexModel(preferredModel?: string | null): string | null 
   }
 
   return `${openAICodexModels[0].provider}/${openAICodexModels[0].model}`;
+}
+
+function requireOpenAICodexModel(preferredModel?: string | null): string {
+  const resolved = resolveOpenAICodexModel(preferredModel);
+  if (resolved) return resolved;
+
+  throw new Error(
+    "No openai-codex/* models are available in your Pi configuration. " +
+    "Please enable an openai-codex provider/model first (check `pi --list-models`).",
+  );
 }
 
 /**
@@ -391,9 +410,8 @@ export default function (pi: ExtensionAPI) {
       separate_windows: Type.Optional(Type.Boolean({ default: false, description: "Open teammates in separate OS windows instead of panes" })),
     }),
     async execute(toolCallId, params: any, signal, onUpdate, ctx) {
-      const effectiveDefaultModel = params.default_model
-        || resolveOpenAICodexModel(getGlobalDefaultModel())
-        || undefined;
+      const preferredDefaultModel = params.default_model || getGlobalDefaultModel() || undefined;
+      const effectiveDefaultModel = requireOpenAICodexModel(preferredDefaultModel);
       const config = teams.createTeam(params.team_name, "local-session", "lead-agent", params.description, effectiveDefaultModel, params.separate_windows);
       return {
         content: [{ type: "text", text: `Team ${params.team_name} created.` }],
@@ -429,24 +447,8 @@ export default function (pi: ExtensionAPI) {
       }
 
       const teamConfig = await teams.readConfig(safeTeamName);
-      const inheritedDefaultModel = resolveOpenAICodexModel(teamConfig.defaultModel || getGlobalDefaultModel())
-        || undefined;
-      let chosenModel = params.model || inheritedDefaultModel;
-
-      // Resolve model to provider/model format
-      if (chosenModel && params.model) {
-        if (!chosenModel.includes('/')) {
-          // Try to resolve using available models from pi --list-models
-          const resolved = resolveModelWithProvider(chosenModel);
-          if (resolved) {
-            chosenModel = resolved;
-          } else if (inheritedDefaultModel && inheritedDefaultModel.includes('/')) {
-            // Fall back to inherited default provider
-            const [provider] = inheritedDefaultModel.split('/');
-            chosenModel = `${provider}/${chosenModel}`;
-          }
-        }
-      }
+      const preferredModel = params.model || teamConfig.defaultModel || getGlobalDefaultModel() || undefined;
+      const chosenModel = requireOpenAICodexModel(preferredModel);
 
       const useSeparateWindow = params.separate_window ?? teamConfig.separateWindows ?? false;
       if (useSeparateWindow && !terminal.supportsWindows()) {
@@ -552,10 +554,8 @@ export default function (pi: ExtensionAPI) {
       const cwd = params.cwd || process.cwd();
       const piBinary = process.argv[1] ? `node ${process.argv[1]}` : "pi";
       let piCmd = piBinary;
-      if (teamConfig.defaultModel) {
-        // Use the combined --model provider/model format
-        piCmd = `${piBinary} --model ${teamConfig.defaultModel}`;
-      }
+      const leadModel = requireOpenAICodexModel(teamConfig.defaultModel || getGlobalDefaultModel());
+      piCmd = `${piBinary} --model ${leadModel}`;
 
       const env = { ...process.env, PI_TEAM_NAME: safeTeamName, PI_AGENT_NAME: "team-lead" };
       try {
