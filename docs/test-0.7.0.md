@@ -3,7 +3,7 @@
 First, set up a test team with a default model.
 
 Prompt:
-"Create a team named 'v070-test' for testing thinking levels. Use 'anthropic/claude-3-5-sonnet-latest' as the default model."
+"Create a team named 'v070-test' for testing thinking levels. Use 'openai-codex/gpt-5.4' as the default model."
 
 ---
 

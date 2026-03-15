@@ -34,7 +34,9 @@ Create your first team:
 
 Set a default model for all teammates:
 
-> **You:** "Create a team named 'Research' and use 'gpt-4o' for everyone"
+> **You:** "Create a team named 'Research' and use 'openai-codex/gpt-5.4' for everyone"
+
+pi-teams only runs teammates on `openai-codex/*` models. If you mention another provider, pi-teams coerces it to an available `openai-codex/*` model.
 
 ---
 
@@ -42,9 +44,9 @@ Set a default model for all teammates:
 
 ### 1. Code Review Team
 
-> **You:** "Create a team named 'code-review' using 'gpt-4o'"
+> **You:** "Create a team named 'code-review' using 'openai-codex/gpt-5.4'"
 > **You:** "Spawn a teammate named 'security-reviewer' to check for vulnerabilities"
-> **You:** "Spawn a teammate named 'performance-reviewer' using 'haiku' to check for optimization opportunities"
+> **You:** "Spawn a teammate named 'performance-reviewer' using 'openai-codex/gpt-5.3-codex' to check for optimization opportunities"
 > **You:** "Create a task for security-reviewer: 'Review the auth module for SQL injection risks' and set it to in_progress"
 > **You:** "Create a task for performance-reviewer: 'Analyze the database queries for N+1 issues' and set it to in_progress"
 
@@ -93,7 +95,7 @@ When qa-bot marks the task as completed, the hook automatically runs tests and l
 
 > **You:** "Create a team named 'migration-team'"
 > **You:** "Spawn a teammate named 'db-migrator' to handle database changes"
-> **You:** "Spawn a teammate named 'api-updater' using 'gpt-4o' to update API endpoints"
+> **You:** "Spawn a teammate named 'api-updater' using 'openai-codex/gpt-5.4' to update API endpoints"
 > **You:** "Spawn a teammate named 'test-writer' to write tests for the migration"
 > **You:** "Create a task for db-migrator: 'Add new columns to the users table' and set it to in_progress"
 
@@ -105,12 +107,12 @@ After db-migrator completes, broadcast the schema change:
 
 Use different models for cost optimization:
 
-> **You:** "Create a team named 'mixed-speed' using 'gpt-4o'"
-> **You:** "Spawn a teammate named 'architect' using 'gpt-4o' with 'high' thinking level for design decisions"
-> **You:** "Spawn a teammate named 'implementer' using 'haiku' with 'low' thinking level for quick coding"
-> **You:** "Spawn a teammate named 'reviewer' using 'gpt-4o' with 'medium' thinking level for code reviews"
+> **You:** "Create a team named 'mixed-speed' using 'openai-codex/gpt-5.4'"
+> **You:** "Spawn a teammate named 'architect' using 'openai-codex/gpt-5.4' with 'high' thinking level for design decisions"
+> **You:** "Spawn a teammate named 'implementer' using 'openai-codex/gpt-5.3-codex' with 'low' thinking level for quick coding"
+> **You:** "Spawn a teammate named 'reviewer' using 'openai-codex/gpt-5.4' with 'medium' thinking level for code reviews"
 
-Now you have expensive reasoning for design and reviews, but fast/cheap implementation.
+Now you have deeper reasoning for design and reviews, but faster implementation — all within the supported `openai-codex/*` family.
 
 ---
 
@@ -220,16 +222,18 @@ Balanced teams typically include:
 - **2-3 low-thinking, fast-model** agents for implementation
 - **1 medium-thinking** agent for coordination
 
+All of these should stay on `openai-codex/*` models.
+
 Example:
 ```bash
 # Design/Review duo (expensive but thorough)
-spawn "architect" using "gpt-4o" with "high" thinking
-spawn "reviewer" using "gpt-4o" with "medium" thinking
+spawn "architect" using "openai-codex/gpt-5.4" with "high" thinking
+spawn "reviewer" using "openai-codex/gpt-5.4" with "medium" thinking
 
 # Implementation trio (fast and cheap)
-spawn "backend-dev" using "haiku" with "low" thinking
-spawn "frontend-dev" using "haiku" with "low" thinking
-spawn "test-writer" using "haiku" with "off" thinking
+spawn "backend-dev" using "openai-codex/gpt-5.3-codex" with "low" thinking
+spawn "frontend-dev" using "openai-codex/gpt-5.3-codex" with "low" thinking
+spawn "test-writer" using "openai-codex/gpt-5.3-codex" with "off" thinking
 ```
 
 ### 3. Plan Approval for High-Risk Changes
@@ -320,13 +324,11 @@ pi  # Then try to use tmux commands
 
 **Problem**: "Model not found" or similar errors.
 
-**Solution**: Check the model name is correct and available in your pi config. Some model names vary between providers:
+**Solution**: pi-teams only supports teammate models from `openai-codex/*`.
 
-- `gpt-4o` - OpenAI
-- `haiku` - Anthropic (usually `claude-3-5-haiku`)
-- `glm-4.7` - Zhipu AI
-
-Check your pi config for available models.
+1. Check `pi --list-models` and confirm at least one `openai-codex/*` model is available.
+2. Prefer explicit model names such as `openai-codex/gpt-5.4` or `openai-codex/gpt-5.3-codex`.
+3. If you mention another provider, pi-teams will coerce it to an available `openai-codex/*` model.
 
 ### Data Location
 

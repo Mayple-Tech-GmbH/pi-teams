@@ -2,6 +2,16 @@
 
 Complete documentation of all tools, parameters, and automated behavior.
 
+## Model policy
+
+pi-teams supports teammates only on `openai-codex/*` models.
+
+This is a workaround for bugs seen with other providers during team spawning and vague team prompts. Until that broader model-selection path is fully reliable, teammates are restricted to `openai-codex/*`.
+
+- If you omit `default_model`, pi-teams picks an available `openai-codex/*` model.
+- If you pass another provider or a vague alias, pi-teams treats it as a hint and resolves it to an available `openai-codex/*` model.
+- Team and teammate examples in this reference use explicit `openai-codex/*` model names.
+
 ---
 
 ## Table of Contents
@@ -34,6 +44,7 @@ If you do not pass `default_model`, pi-teams picks an available `openai-codex/*`
 ```javascript
 team_create({ team_name: "my-team" })
 team_create({ team_name: "research", default_model: "openai-codex/gpt-5.4" })
+team_create({ team_name: "research", default_model: "anthropic/claude-sonnet-4-6" }) // resolves to openai-codex/*
 ```
 
 ---
@@ -91,6 +102,7 @@ Launch a new agent into a terminal pane with a role and instructions.
 - By default, teammates inherit an `openai-codex/*` team model
 - Passing `model` can influence which `openai-codex/*` model is chosen
 - Non-`openai-codex/*` model inputs are coerced to an available `openai-codex/*` model
+- The actual spawned model remains `openai-codex/*`, even when the input hint names another provider
 
 **Thinking Levels**:
 - `off`: No thinking blocks (fastest)
