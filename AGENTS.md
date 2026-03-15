@@ -28,7 +28,8 @@ Agents spawned in separate panes. They are designed for:
 ### 🚀 Specialist Spawning
 You can create teammates with custom identities, models, and reasoning depths:
 - **Custom Roles**: "Spawn a 'CSS Expert' to fix the layout shifts."
-- **Model Selection**: Use `gpt-4o` for complex architecture and `haiku` for fast, repetitive tasks.
+- **Model Selection**: Use only `openai-codex/*` models for teams and teammates. Prefer explicit names like `openai-codex/gpt-5.4` or `openai-codex/gpt-5.3-codex`.
+- **Provider Enforcement**: If a user mentions another provider or a vague alias, treat it only as a hint and resolve it to an available `openai-codex/*` model.
 - **Thinking Levels**: Set thinking to `high` for deep reasoning or `off` for maximum speed.
 
 ### 📋 Shared Task Board

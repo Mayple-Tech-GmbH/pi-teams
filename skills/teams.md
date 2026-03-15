@@ -6,6 +6,13 @@ description: Coordinate multiple agents working on a project using shared task l
 
 Coordinate multiple agents working on a project using shared task lists and messaging via **tmux** or **Zellij**.
 
+## Model rule
+
+- Teams and teammates must use **only** `openai-codex/*` models.
+- Never request `anthropic/*`, `github-copilot/*`, `openai/*`, or any other provider for teammates.
+- If the user names another provider, treat it as a hint and let pi-teams coerce it to an available `openai-codex/*` model.
+- When you mention a model in chat, examples, or tool arguments, use an explicit `openai-codex/*` model name.
+
 ## Workflow
 
 1.  **Create a team**: Use `team_create(team_name="my-team")`.
