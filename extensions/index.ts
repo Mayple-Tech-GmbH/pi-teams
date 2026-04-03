@@ -12,13 +12,19 @@ import {
   requireOpenAICodexModel,
   resolveModelWithProvider,
 } from "../src/utils/model-resolution";
+import { getPiLaunchCommand, loadAvailableModels } from "../src/utils/available-models";
 import { getTerminalAdapter } from "../src/adapters/terminal-registry";
 import { Iterm2Adapter } from "../src/adapters/iterm2-adapter";
 import * as predefined from "../src/utils/predefined-teams";
 import * as path from "node:path";
 import * as fs from "node:fs";
+<<<<<<< HEAD
 import * as os from "node:os";
 import { spawnSync } from "node:child_process";
+||||||| parent of eff7d29 (feat: improve team model discovery)
+import { spawnSync } from "node:child_process";
+=======
+>>>>>>> eff7d29 (feat: improve team model discovery)
 
 /**
  * Build the command used to relaunch pi for teammate processes.
@@ -74,57 +80,34 @@ const STARTUP_STALL_MS = 60000;
 let settingsCache: { defaultModel?: string; defaultProvider?: string } | null = null;
 let settingsCacheTime = 0;
 
-function runPiCommand(args: string[]) {
-  const spawnArgs = process.argv[1]
-    ? [process.argv[1], ...args]
-    : args;
-  const command = process.argv[1] ? process.execPath : "pi";
-
-  return spawnSync(command, spawnArgs, {
-    encoding: "utf-8",
-    timeout: 10000,
-  });
-}
-
 /**
- * Query available models from pi --list-models
+ * Query available models from Pi.
+ *
+ * Prefer the current Pi runtime first so teams stay aligned with the lead session even
+ * when multiple `pi` binaries are installed. Fall back to the `pi` binary on PATH only
+ * when needed.
  */
-function getAvailableModels(): AvailableModel[] {
+function getAvailableModels(forceRefresh = false): AvailableModel[] {
   const now = Date.now();
-  if (availableModelsCache && now - modelsCacheTime < MODELS_CACHE_TTL) {
+  if (!forceRefresh && availableModelsCache && availableModelsCache.length > 0 && now - modelsCacheTime < MODELS_CACHE_TTL) {
     return availableModelsCache;
   }
 
-  try {
-    const result = runPiCommand(["--list-models"]);
-
-    if (result.status !== 0 || !result.stdout) {
-      return [];
-    }
-
-    const models: AvailableModel[] = [];
-    const lines = result.stdout.split("\n");
-
-    for (const line of lines) {
-      // Skip header line and empty lines
-      if (!line.trim() || line.startsWith("provider")) continue;
-
-      // Parse: provider model context max-out thinking images
-      const parts = line.trim().split(/\s+/);
-      if (parts.length >= 2) {
-        const provider = parts[0];
-        const model = parts[1];
-        if (provider && model) {
-          models.push({ provider, model });
-        }
-      }
-    }
-
+  const models = loadAvailableModels();
+  if (models.length > 0) {
     availableModelsCache = models;
     modelsCacheTime = now;
     return models;
-  } catch (e) {
-    return [];
+  }
+
+  return [];
+}
+
+function requireFreshOpenAICodexModel(preferredModel?: string | null): string {
+  try {
+    return requireOpenAICodexModel(getAvailableModels(), preferredModel);
+  } catch (error) {
+    return requireOpenAICodexModel(getAvailableModels(true), preferredModel);
   }
 }
 
@@ -789,7 +772,7 @@ export default function (pi: ExtensionAPI) {
       }
       
       const preferredDefaultModel = params.default_model || getGlobalDefaultModel() || undefined;
-      const effectiveDefaultModel = requireOpenAICodexModel(getAvailableModels(), preferredDefaultModel);
+      const effectiveDefaultModel = requireFreshOpenAICodexModel(preferredDefaultModel);
       const config = teams.createTeam(params.team_name, "local-session", "lead-agent", params.description, effectiveDefaultModel, params.separate_windows);
       // Register this session as the lead so it can receive inbox messages
       registerLeadSession(params.team_name);
@@ -840,7 +823,7 @@ export default function (pi: ExtensionAPI) {
       }
       
       const preferredModel = params.model || teamConfig.defaultModel || getGlobalDefaultModel() || undefined;
-      const chosenModel = requireOpenAICodexModel(getAvailableModels(), preferredModel);
+      const chosenModel = requireFreshOpenAICodexModel(preferredModel);
 
       const useSeparateWindow = params.separate_window ?? teamConfig.separateWindows ?? false;
       if (useSeparateWindow && !terminal.supportsWindows()) {
@@ -952,7 +935,7 @@ export default function (pi: ExtensionAPI) {
       const cwd = params.cwd || process.cwd();
       const piBinary = getPiLaunchCommand();
       let piCmd = piBinary;
-      const leadModel = requireOpenAICodexModel(getAvailableModels(), teamConfig.defaultModel || getGlobalDefaultModel());
+      const leadModel = requireFreshOpenAICodexModel(teamConfig.defaultModel || getGlobalDefaultModel());
       piCmd = `${piBinary} --model ${leadModel}`;
 
       const env = { ...process.env, PI_TEAM_NAME: safeTeamName, PI_AGENT_NAME: "team-lead" };

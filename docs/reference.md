@@ -10,6 +10,8 @@ This is a workaround for bugs seen with other providers during team spawning and
 
 - If you omit `default_model`, pi-teams picks an available `openai-codex/*` model.
 - If you pass another provider or a vague alias, pi-teams treats it as a hint and resolves it to an available `openai-codex/*` model.
+- pi-teams checks the current Pi runtime first and falls back to the `pi` binary on your PATH if needed, so team tools stay aligned with the lead session even when multiple `pi` versions are installed.
+- If live probing still returns no models, pi-teams falls back to configured models from `~/.pi/agent/settings.json` (`enabledModels`, `defaultProvider`, `defaultModel`).
 - Team and teammate examples in this reference use explicit `openai-codex/*` model names.
 
 ---

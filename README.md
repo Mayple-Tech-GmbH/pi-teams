@@ -87,7 +87,8 @@ pi install npm:pi-teams
 
 **Smart Model Resolution:**
 When you specify a model, pi-teams automatically:
-- Queries available models from `pi --list-models`
+- Queries available models from the current Pi runtime first, then falls back to `pi --list-models`
+- Falls back to configured models in `~/.pi/agent/settings.json` if live probing is empty
 - Resolves teammates to an available `openai-codex/*` model
 - Coerces non-`openai-codex/*` requests to `openai-codex/*`
 - Constructs the correct `--model provider/model:thinking` command
