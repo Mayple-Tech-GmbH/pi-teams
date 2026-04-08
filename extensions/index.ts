@@ -16,6 +16,11 @@ import { getPiLaunchCommand, loadAvailableModels } from "../src/utils/available-
 import { getTerminalAdapter } from "../src/adapters/terminal-registry";
 import { Iterm2Adapter } from "../src/adapters/iterm2-adapter";
 import * as predefined from "../src/utils/predefined-teams";
+import {
+  buildLeadInboxWakeMessage,
+  buildLeadSystemPrompt,
+  shouldWakeLeadForInbox,
+} from "../src/utils/lead-inbox-autonomy";
 import * as path from "node:path";
 import * as fs from "node:fs";
 import * as os from "node:os";
@@ -282,6 +287,7 @@ export default function (pi: ExtensionAPI) {
 
   // Track whether lead inbox polling has been started (to avoid duplicates)
   let leadPollingStarted = false;
+  let lastLeadInboxWakeAt = 0;
   let sessionCtx: any = null;
 
   /**
@@ -295,15 +301,22 @@ export default function (pi: ExtensionAPI) {
 
     setInterval(async () => {
       if (!teamName) return;
-      if (sessionCtx.isIdle()) {
-        try {
-          const unread = await messaging.readInbox(teamName, agentName, true, false);
-          if (unread.length > 0) {
-            pi.sendUserMessage(`I have ${unread.length} new message(s) in my inbox. Reading them now...`);
-          }
-        } catch {
-          // Ignore errors for lead polling
+
+      try {
+        const unread = await messaging.readInbox(teamName, agentName, true, false);
+        if (!shouldWakeLeadForInbox({
+          unreadCount: unread.length,
+          isIdle: sessionCtx.isIdle(),
+          hasPendingMessages: sessionCtx.hasPendingMessages(),
+          lastWakeAt: lastLeadInboxWakeAt,
+        })) {
+          return;
         }
+
+        lastLeadInboxWakeAt = Date.now();
+        pi.sendUserMessage(buildLeadInboxWakeMessage(teamName, unread.length));
+      } catch {
+        // Ignore errors for lead polling
       }
     }, 30000);
   }
@@ -414,6 +427,12 @@ export default function (pi: ExtensionAPI) {
 
       return {
         systemPrompt: event.systemPrompt + `\n\nYou are teammate '${agentName}' on team '${teamName}'.\nYour lead is 'team-lead'.${modelInfo}\nStart by calling read_inbox(team_name="${teamName}") to get your initial instructions.`,
+      };
+    }
+
+    if (!isTeammate && teamName) {
+      return {
+        systemPrompt: event.systemPrompt + `\n\n${buildLeadSystemPrompt(teamName)}`,
       };
     }
   });

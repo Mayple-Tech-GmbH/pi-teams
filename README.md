@@ -41,7 +41,7 @@ pi install npm:pi-teams
 - **Spawn Specialists**: Create agents like "Security Expert" or "Frontend Pro" to handle sub-tasks in parallel.
 - **Shared Task Board**: Keep everyone on the same page with a persistent list of tasks and their status.
 - **Agent Messaging**: Agents can send direct messages to each other and to you (the Team Lead) to report progress.
-- **Autonomous Work**: Teammates automatically "wake up," read their instructions, and poll their inboxes for new work while idle.
+- **Autonomous Work**: Teammates automatically "wake up," read their instructions, and poll their inboxes for new work while idle. The lead also wakes on teammate activity and is instructed to read the inbox first before continuing coordination.
 - **Beautiful UI**: Optimized vertical splits in `tmux` with clear labels so you always know who is doing what.
 
 ### Advanced Features

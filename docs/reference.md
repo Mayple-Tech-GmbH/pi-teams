@@ -451,7 +451,9 @@ When a teammate is spawned, they automatically:
 
 If a teammate is idle (has no active work), they automatically check for new messages every **30 seconds**.
 
-This ensures teammates stay responsive to new tasks, messages, and task reassignments without manual intervention.
+If the lead is idle and unread teammate messages exist, the lead is automatically awakened and instructed to call `read_inbox` first, then continue coordinating autonomously.
+
+This keeps both teammates and the lead responsive to new tasks, messages, plan reviews, and task reassignments without manual intervention.
 
 ---
 
@@ -482,7 +484,9 @@ Each teammate is given a custom system prompt that includes:
 - Available tools
 - Team environment guidelines
 
-This ensures teammates understand their responsibilities and can work autonomously.
+The lead also receives coordination guidance that tells it to read the inbox first when awakened by teammate activity and to continue coordinating autonomously unless human input is actually required.
+
+This ensures teammates and the lead understand their responsibilities and can work autonomously.
 
 ---
 
