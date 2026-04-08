@@ -18,65 +18,13 @@ import { Iterm2Adapter } from "../src/adapters/iterm2-adapter";
 import * as predefined from "../src/utils/predefined-teams";
 import * as path from "node:path";
 import * as fs from "node:fs";
-<<<<<<< HEAD
 import * as os from "node:os";
-import { spawnSync } from "node:child_process";
-||||||| parent of eff7d29 (feat: improve team model discovery)
-import { spawnSync } from "node:child_process";
-=======
->>>>>>> eff7d29 (feat: improve team model discovery)
-
-/**
- * Build the command used to relaunch pi for teammate processes.
- *
- * There are three common cases:
- * - npm/node install: pi runs as `node .../dist/cli.js`
- * - standalone compiled binary: process.execPath is the actual `pi` executable
- * - shim-based installs (e.g. Volta): process.execPath is `node` and argv[1]
- *   may be a shim path, so the safest relaunch command is plain `pi`
- */
-function getPiLaunchCommand(): string {
-  const argv1 = process.argv[1];
-  const execPath = process.execPath;
-
-  // Regular Node install: relaunch the actual CLI script with node.
-  if (argv1) {
-    const ext = path.extname(argv1).toLowerCase();
-    const looksLikeScript = [".js", ".mjs", ".cjs", ".ts", ".mts", ".cts"].includes(ext)
-      || /(?:^|[/\\])dist[/\\]cli\.js$/i.test(argv1);
-
-    if (looksLikeScript) {
-      return `node ${JSON.stringify(argv1)}`;
-    }
-  }
-
-  // Standalone binary install: execPath is the pi executable itself.
-  if (execPath) {
-    const base = path.basename(execPath).toLowerCase();
-    if (base !== "node" && base !== "node.exe" && base !== "bun" && base !== "bun.exe") {
-      return JSON.stringify(execPath);
-    }
-  }
-
-  // Shim-based installs (like Volta) are safest to relaunch through PATH.
-  return "pi";
-}
 
 // Cache for available models
 let availableModelsCache: AvailableModel[] | null = null;
 let modelsCacheTime = 0;
 const MODELS_CACHE_TTL = 60000; // 1 minute
 const SETTINGS_CACHE_TTL = 60000; // 1 minute
-<<<<<<< HEAD
-const OPENAI_CODEX_PROVIDER = "openai-codex";
-||||||| parent of d08ead9 (Enforce openai-codex models for pi-teams)
-const HEARTBEAT_STALE_MS = 90000;
-const STARTUP_STALL_MS = 60000;
-const OPENAI_CODEX_PROVIDER = "openai-codex";
-=======
-const HEARTBEAT_STALE_MS = 90000;
-const STARTUP_STALL_MS = 60000;
->>>>>>> d08ead9 (Enforce openai-codex models for pi-teams)
 let settingsCache: { defaultModel?: string; defaultProvider?: string } | null = null;
 let settingsCacheTime = 0;
 
@@ -109,134 +57,6 @@ function requireFreshOpenAICodexModel(preferredModel?: string | null): string {
   } catch (error) {
     return requireOpenAICodexModel(getAvailableModels(true), preferredModel);
   }
-}
-
-/**
-<<<<<<< HEAD
- * Provider priority list - OAuth/subscription providers first (cheaper), then API-key providers
- */
-const PROVIDER_PRIORITY = [
-  // OAuth / Subscription providers (typically free/cheaper)
-  "google-gemini-cli",  // Google Gemini CLI - OAuth, free tier
-  "github-copilot",     // GitHub Copilot - subscription
-  "kimi-sub",           // Kimi subscription
-  // API key providers
-  "anthropic",
-  "openai",
-  "google",
-  "zai",
-  "openrouter",
-  "azure-openai",
-  "amazon-bedrock",
-  "mistral",
-  "groq",
-  "cerebras",
-  "xai",
-  "vercel-ai-gateway",
-];
-
-/**
- * Find the best matching provider for a given model name.
- * Returns the full provider/model string or null if not found.
- */
-function resolveModelWithProvider(modelName: string): string | null {
-  // If already has provider prefix, return as-is
-  if (modelName.includes("/")) {
-    return modelName;
-  }
-
-  const availableModels = getAvailableModels();
-  if (availableModels.length === 0) {
-    return null;
-  }
-
-  const lowerModelName = modelName.toLowerCase();
-
-  // Find all exact matches (case-insensitive) and sort by provider priority
-  const exactMatches = availableModels.filter(
-    (m) => m.model.toLowerCase() === lowerModelName
-  );
-
-  if (exactMatches.length > 0) {
-    // Sort by provider priority (lower index = higher priority)
-    exactMatches.sort((a, b) => {
-      const aIndex = PROVIDER_PRIORITY.indexOf(a.provider);
-      const bIndex = PROVIDER_PRIORITY.indexOf(b.provider);
-      // If provider not in priority list, put it at the end
-      const aPriority = aIndex === -1 ? 999 : aIndex;
-      const bPriority = bIndex === -1 ? 999 : bIndex;
-      return aPriority - bPriority;
-    });
-    return `${exactMatches[0].provider}/${exactMatches[0].model}`;
-  }
-
-  // Try partial match (model name contains the search term)
-  const partialMatches = availableModels.filter((m) =>
-    m.model.toLowerCase().includes(lowerModelName)
-  );
-
-  if (partialMatches.length > 0) {
-    for (const preferredProvider of PROVIDER_PRIORITY) {
-      const match = partialMatches.find(
-        (m) => m.provider === preferredProvider
-      );
-      if (match) {
-        return `${match.provider}/${match.model}`;
-      }
-    }
-    // Return first match if no preferred provider found
-    return `${partialMatches[0].provider}/${partialMatches[0].model}`;
-  }
-
-  return null;
-}
-
-function stripProvider(modelName: string): string {
-  return modelName.includes("/") ? modelName.split("/").slice(1).join("/") : modelName;
-}
-
-function resolveOpenAICodexModel(preferredModel?: string | null): string | null {
-  const openAICodexModels = getAvailableModels().filter(
-    (model) => model.provider === OPENAI_CODEX_PROVIDER,
-  );
-
-  if (openAICodexModels.length === 0) {
-    return null;
-  }
-
-  const preferredNames = [preferredModel, "gpt-5.4", "gpt-5.3-codex"]
-    .filter((value): value is string => !!value)
-    .map((value) => stripProvider(value).toLowerCase());
-
-  for (const preferredName of preferredNames) {
-    const exactMatch = openAICodexModels.find(
-      (model) => model.model.toLowerCase() === preferredName,
-    );
-    if (exactMatch) {
-      return `${exactMatch.provider}/${exactMatch.model}`;
-    }
-  }
-
-  for (const preferredName of preferredNames) {
-    const partialMatch = openAICodexModels.find((model) =>
-      model.model.toLowerCase().includes(preferredName),
-    );
-    if (partialMatch) {
-      return `${partialMatch.provider}/${partialMatch.model}`;
-    }
-  }
-
-  return `${openAICodexModels[0].provider}/${openAICodexModels[0].model}`;
-}
-
-function requireOpenAICodexModel(preferredModel?: string | null): string {
-  const resolved = resolveOpenAICodexModel(preferredModel);
-  if (resolved) return resolved;
-
-  throw new Error(
-    "No openai-codex/* models are available in your Pi configuration. " +
-    "Please enable an openai-codex provider/model first (check `pi --list-models`).",
-  );
 }
 
 /**
@@ -300,24 +120,24 @@ function isPidAlive(pid: number): boolean {
 function cleanupStaleTeam(teamName: string, terminal: any): boolean {
   const sessionFile = paths.leadSessionPath(teamName);
   const configFile = paths.configPath(teamName);
-  
+
   if (!fs.existsSync(sessionFile) || !fs.existsSync(configFile)) {
     return false;
   }
-  
+
   try {
     const session = JSON.parse(fs.readFileSync(sessionFile, "utf-8"));
-    
+
     // Only cleanup if the lead PID is actually dead
     if (session.pid && !isPidAlive(session.pid)) {
       // Read config to get member info for cleanup
       try {
         const config = JSON.parse(fs.readFileSync(configFile, "utf-8"));
-        
+
         // Kill all teammate panes/windows
         for (const member of config.members || []) {
           if (member.name === "team-lead") continue;
-          
+
           // Kill via PID file
           const pidFile = path.join(paths.teamDir(teamName), `${member.name}.pid`);
           if (fs.existsSync(pidFile)) {
@@ -327,7 +147,7 @@ function cleanupStaleTeam(teamName: string, terminal: any): boolean {
               fs.unlinkSync(pidFile);
             } catch {}
           }
-          
+
           // Kill via terminal adapter
           if (terminal) {
             if (member.windowId) {
@@ -339,23 +159,23 @@ function cleanupStaleTeam(teamName: string, terminal: any): boolean {
           }
         }
       } catch {}
-      
+
       // Delete entire team directory
       const teamDirectory = paths.teamDir(teamName);
       if (fs.existsSync(teamDirectory)) {
         fs.rmSync(teamDirectory, { recursive: true });
       }
-      
+
       // Delete tasks directory
       const tasksDirectory = paths.taskDir(teamName);
       if (fs.existsSync(tasksDirectory)) {
         fs.rmSync(tasksDirectory, { recursive: true });
       }
-      
+
       return true;
     }
   } catch {}
-  
+
   return false;
 }
 
@@ -399,136 +219,6 @@ function cleanupAgentSessionFolders(maxAgeMs: number = 24 * 60 * 60 * 1000): num
 }
 
 /**
-||||||| parent of d08ead9 (Enforce openai-codex models for pi-teams)
- * Provider priority list - OAuth/subscription providers first (cheaper), then API-key providers
- */
-const PROVIDER_PRIORITY = [
-  // OAuth / Subscription providers (typically free/cheaper)
-  "google-gemini-cli",  // Google Gemini CLI - OAuth, free tier
-  "github-copilot",     // GitHub Copilot - subscription
-  "kimi-sub",           // Kimi subscription
-  // API key providers
-  "anthropic",
-  "openai",
-  "google",
-  "zai",
-  "openrouter",
-  "azure-openai",
-  "amazon-bedrock",
-  "mistral",
-  "groq",
-  "cerebras",
-  "xai",
-  "vercel-ai-gateway",
-];
-
-/**
- * Find the best matching provider for a given model name.
- * Returns the full provider/model string or null if not found.
- */
-function resolveModelWithProvider(modelName: string): string | null {
-  // If already has provider prefix, return as-is
-  if (modelName.includes("/")) {
-    return modelName;
-  }
-
-  const availableModels = getAvailableModels();
-  if (availableModels.length === 0) {
-    return null;
-  }
-
-  const lowerModelName = modelName.toLowerCase();
-
-  // Find all exact matches (case-insensitive) and sort by provider priority
-  const exactMatches = availableModels.filter(
-    (m) => m.model.toLowerCase() === lowerModelName
-  );
-
-  if (exactMatches.length > 0) {
-    // Sort by provider priority (lower index = higher priority)
-    exactMatches.sort((a, b) => {
-      const aIndex = PROVIDER_PRIORITY.indexOf(a.provider);
-      const bIndex = PROVIDER_PRIORITY.indexOf(b.provider);
-      // If provider not in priority list, put it at the end
-      const aPriority = aIndex === -1 ? 999 : aIndex;
-      const bPriority = bIndex === -1 ? 999 : bIndex;
-      return aPriority - bPriority;
-    });
-    return `${exactMatches[0].provider}/${exactMatches[0].model}`;
-  }
-
-  // Try partial match (model name contains the search term)
-  const partialMatches = availableModels.filter((m) =>
-    m.model.toLowerCase().includes(lowerModelName)
-  );
-
-  if (partialMatches.length > 0) {
-    for (const preferredProvider of PROVIDER_PRIORITY) {
-      const match = partialMatches.find(
-        (m) => m.provider === preferredProvider
-      );
-      if (match) {
-        return `${match.provider}/${match.model}`;
-      }
-    }
-    // Return first match if no preferred provider found
-    return `${partialMatches[0].provider}/${partialMatches[0].model}`;
-  }
-
-  return null;
-}
-
-function stripProvider(modelName: string): string {
-  return modelName.includes("/") ? modelName.split("/").slice(1).join("/") : modelName;
-}
-
-function resolveOpenAICodexModel(preferredModel?: string | null): string | null {
-  const openAICodexModels = getAvailableModels().filter(
-    (model) => model.provider === OPENAI_CODEX_PROVIDER,
-  );
-
-  if (openAICodexModels.length === 0) {
-    return null;
-  }
-
-  const preferredNames = [preferredModel, "gpt-5.4", "gpt-5.3-codex"]
-    .filter((value): value is string => !!value)
-    .map((value) => stripProvider(value).toLowerCase());
-
-  for (const preferredName of preferredNames) {
-    const exactMatch = openAICodexModels.find(
-      (model) => model.model.toLowerCase() === preferredName,
-    );
-    if (exactMatch) {
-      return `${exactMatch.provider}/${exactMatch.model}`;
-    }
-  }
-
-  for (const preferredName of preferredNames) {
-    const partialMatch = openAICodexModels.find((model) =>
-      model.model.toLowerCase().includes(preferredName),
-    );
-    if (partialMatch) {
-      return `${partialMatch.provider}/${partialMatch.model}`;
-    }
-  }
-
-  return `${openAICodexModels[0].provider}/${openAICodexModels[0].model}`;
-}
-
-function requireOpenAICodexModel(preferredModel?: string | null): string {
-  const resolved = resolveOpenAICodexModel(preferredModel);
-  if (resolved) return resolved;
-
-  throw new Error(
-    "No openai-codex/* models are available in your Pi configuration. " +
-    "Please enable an openai-codex provider/model first (check `pi --list-models`).",
-  );
-}
-
-/**
-=======
->>>>>>> d08ead9 (Enforce openai-codex models for pi-teams)
  * Read global Pi default model from ~/.pi/agent/settings.json
  */
 function getGlobalDefaultModel(): string | null {
