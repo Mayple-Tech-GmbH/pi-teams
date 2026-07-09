@@ -45,8 +45,8 @@ If you do not pass `default_model`, pi-teams picks an available `openai-codex/*`
 **Examples**:
 ```javascript
 team_create({ team_name: "my-team" })
-team_create({ team_name: "research", default_model: "openai-codex/gpt-5.4" })
-team_create({ team_name: "research", default_model: "anthropic/claude-sonnet-4-6" }) // resolves to openai-codex/*
+team_create({ team_name: "research", default_model: "openai-codex/gpt-5.6-terra" })
+team_create({ team_name: "critical-review", default_model: "openai-codex/gpt-5.6-sol" })
 ```
 
 ---
@@ -541,17 +541,17 @@ All pi-teams data is stored in your home directory under `~/.pi/`:
 {
   "name": "my-team",
   "description": "Code review team",
-  "defaultModel": "openai-codex/gpt-5.4",
+  "defaultModel": "openai-codex/gpt-5.6-sol",
   "members": [
     {
       "name": "security-bot",
-      "model": "openai-codex/gpt-5.4",
+      "model": "openai-codex/gpt-5.6-sol",
       "thinking": "medium",
       "planModeRequired": true
     },
     {
       "name": "frontend-dev",
-      "model": "openai-codex/gpt-5.3-codex",
+      "model": "openai-codex/gpt-5.6-terra",
       "thinking": "low",
       "planModeRequired": false
     }

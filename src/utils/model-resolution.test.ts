@@ -10,6 +10,7 @@ const availableModels = [
   { provider: "github-copilot", model: "gpt-5.4" },
   { provider: "openai-codex", model: "gpt-5.3-codex" },
   { provider: "openai-codex", model: "gpt-5.4" },
+  { provider: "openai-codex", model: "gpt-5.6-sol" },
 ];
 
 describe("resolveModelWithProvider", () => {
@@ -33,15 +34,15 @@ describe("resolveOpenAICodexModel", () => {
     );
   });
 
-  it("coerces anthropic preferences to an openai-codex model", () => {
+  it("coerces anthropic preferences to the default openai-codex model", () => {
     expect(resolveOpenAICodexModel(availableModels, "anthropic/claude-sonnet-4-6")).toBe(
-      "openai-codex/gpt-5.4",
+      "openai-codex/gpt-5.6-sol",
     );
   });
 
-  it("falls back to gpt-5.4 when no preference is provided", () => {
+  it("falls back to GPT-5.6 Sol when no preference is provided", () => {
     expect(resolveOpenAICodexModel(availableModels)).toBe(
-      "openai-codex/gpt-5.4",
+      "openai-codex/gpt-5.6-sol",
     );
   });
 });

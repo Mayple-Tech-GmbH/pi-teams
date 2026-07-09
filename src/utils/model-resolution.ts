@@ -100,7 +100,7 @@ export function resolveOpenAICodexModel(
     return null;
   }
 
-  const preferredNames = [preferredModel, "gpt-5.4", "gpt-5.3-codex"]
+  const preferredNames = [preferredModel, "gpt-5.6-sol", "gpt-5.6-terra", "gpt-5.6-luna", "gpt-5.5", "gpt-5.4", "gpt-5.3-codex"]
     .filter((value): value is string => !!value)
     .map((value) => stripProvider(value).toLowerCase());
 

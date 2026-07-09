@@ -12,7 +12,7 @@ Coordinate multiple agents working on a project using shared task lists and mess
 - Never request `anthropic/*`, `github-copilot/*`, `openai/*`, or any other provider for teammates.
 - If the user names another provider, treat it as a hint and let pi-teams coerce it to an available `openai-codex/*` model.
 - When you mention a model in chat, examples, or tool arguments, use an explicit `openai-codex/*` model name.
-
+- For GPT-5.6, map low-cost work to `openai-codex/gpt-5.6-luna`, balanced work to `openai-codex/gpt-5.6-terra`, and high-capability/default work to `openai-codex/gpt-5.6-sol`.
 ## Workflow
 
 1.  **Create a team**: Use `team_create(team_name="my-team")`.
