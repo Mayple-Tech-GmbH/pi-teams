@@ -18,6 +18,7 @@ This is a workaround for bugs seen with other providers during team spawning and
 
 ## Table of Contents
 
+- [Activation Commands and States](#activation-commands-and-states)
 - [Team Management](#team-management)
 - [Teammates](#teammates)
 - [Task Management](#task-management)
@@ -26,6 +27,46 @@ This is a workaround for bugs seen with other providers during team spawning and
 - [Automated Behavior](#automated-behavior)
 - [Task Statuses](#task-statuses)
 - [Configuration & Data](#configuration--data)
+
+---
+
+## Activation Commands and States
+
+### `/team <request>`
+
+Use `/team <request>` for explicit, request-scoped activation. Pi waits until idle, lazily registers and activates the 21 Teams tools, preserves unrelated tool state and order, and forwards exactly one message:
+
+```text
+Use pi-teams for this request:
+<request>
+```
+
+Empty `/team` input is a usage error (`Usage: /team <request>`) and does not change tool state. No `/team status` or `/team off` subcommands exist.
+
+### `--team-mode`
+
+`pi --team-mode` explicitly registers and activates Teams for the entire CLI session. This override remains active when an agent run settles without a live team.
+
+### State semantics
+
+| State | Tool visibility | Transition |
+| --- | --- | --- |
+| `inactive-unregistered` | An ordinary cold session has no registered or active Teams tools. | Use `/team <request>`, `--team-mode`, live-lead recovery, or teammate startup. |
+| `enabled-request` | Registered and active for the forwarded request. | Settle without a team to auto-hide; successful team creation becomes live-lead mode. |
+| `enabled-cli` | Registered and active for the session. | End the session. |
+| `enabled-live-lead` | Registered and active for the current live team. | Successfully shut down that same team to auto-hide unless CLI mode is set. |
+| `enabled-teammate` | Registered and active for the teammate session. | End the teammate session. |
+| `inactive-registered` | Registered after first use but absent from active model tool schemas. | Activate explicitly again, recover a live lead, or start as a teammate. |
+
+Pi has no tool-unregistration API. Auto-hide therefore removes the Teams names from the active set but leaves their registrations in the full inventory. A stale Teams call is blocked while Teams authorization is inactive.
+
+A successful shutdown changes activation only for the current live team. Shutting down another team preserves the current mode; a failed shutdown preserves activation for recovery and retry. Teammate startup and same-process live-lead recovery activate Teams automatically.
+
+### Ownership boundaries
+
+The activation gate covers exactly these 21 Teams tools: `team_create`, `spawn_teammate`, `spawn_lead_window`, `send_message`, `broadcast_message`, `read_inbox`, `task_create`, `task_submit_plan`, `task_evaluate_plan`, `task_list`, `task_update`, `team_shutdown`, `cleanup_agent_sessions`, `task_read`, `check_teammate`, `process_shutdown_approved`, `list_predefined_teams`, `list_predefined_agents`, `create_predefined_team`, `save_team_as_template`, and `list_runtime_teams`.
+
+pi-teams changes only those names and preserves unrelated active and inactive choices. It does not detect or override `/lock` or other profiles. `/lock` remains the separate authority for read-only enforcement. **pi-subagents is separate from pi-teams** and has its own delegation tools and lifecycle.
 
 ---
 

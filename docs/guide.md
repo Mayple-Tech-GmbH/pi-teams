@@ -5,6 +5,7 @@ This guide provides detailed examples, patterns, and best practices for using pi
 ## Table of Contents
 
 - [Getting Started](#getting-started)
+- [Activation and Tool Visibility](#activation-and-tool-visibility)
 - [Common Workflows](#common-workflows)
 - [Hook System](#hook-system)
 - [Best Practices](#best-practices)
@@ -28,19 +29,44 @@ Then start pi:
 pi
 ```
 
-Create your first team:
+Explicitly activate pi-teams and create your first team in one step:
 
-> **You:** "Create a team named 'my-team'"
+```text
+/team Create a team named 'my-team' for this task
+```
 
-Set a default model for all teammates:
+To keep Teams available for every request in this Pi session, start it with `pi --team-mode`. Then ask for a team in ordinary language. pi-teams only runs teammates on `openai-codex/*` models; another provider name is treated as a hint and coerced to an available supported model.
 
-> **You:** "Create a team named 'Research' and use 'openai-codex/gpt-5.4' for everyone"
+## Activation and Tool Visibility
 
-pi-teams only runs teammates on `openai-codex/*` models. If you mention another provider, pi-teams coerces it to an available `openai-codex/*` model.
+### Request-scoped activation
+
+`/team <request>` is an explicit, one-step request. It activates the 21 Teams tools, preserves unrelated tool state and order, and forwards:
+
+```text
+Use pi-teams for this request:
+<request>
+```
+
+Empty `/team` input reports `Usage: /team <request>` and changes nothing. No status/off subcommands are available.
+
+When the request settles without creating a team, pi-teams hides its tools. A cold session is **unregistered and inactive**: the Teams tools do not appear in the registered inventory or model schemas. After first use, inactive mode is **registered but inactive**: Pi retains the registrations because it cannot unregister tools, but the schemas remain absent from the model's active context.
+
+### Session and live-team activation
+
+`pi --team-mode` is a session-wide override, so settling one request does not hide Teams. Teammate sessions activate Teams automatically. A lead that reconnects to a live team in the same process also recovers activation automatically.
+
+Creating a team keeps Teams active after the initiating request settles. A successful shutdown hides the tools only when it shuts down the current live team, unless `--team-mode` remains set. Shutting down a different team leaves the current mode unchanged. A failed shutdown leaves Teams active for recovery and retry.
+
+### Separate boundaries
+
+pi-teams adds or removes only its own 21 tool names and preserves all unrelated active or inactive choices. `/lock` and other profiles remain separate owners of their restrictions; `/lock` must still enforce read-only behavior. **pi-subagents is separate from pi-teams**: pi-subagents delegates subagents, while pi-teams manages terminal teammates, messaging, and a shared task board.
 
 ---
 
 ## Common Workflows
+
+In a cold session, send each create-team example as `/team <request>`; otherwise, the examples assume Pi was started with `--team-mode`.
 
 ### 1. Code Review Team
 

@@ -1,6 +1,5 @@
 import type { ExtensionAPI } from "@mariozechner/pi-coding-agent";
-import { Type } from "@sinclair/typebox";
-import { StringEnum } from "@mariozechner/pi-ai";
+import { StringEnum, Type } from "@mariozechner/pi-ai";
 import * as paths from "../src/utils/paths";
 import * as teams from "../src/utils/teams";
 import * as tasks from "../src/utils/tasks";
@@ -21,6 +20,11 @@ import {
   buildLeadSystemPrompt,
   shouldWakeLeadForInbox,
 } from "../src/utils/lead-inbox-autonomy";
+import {
+  activateTeamTools,
+  removeTeamTools,
+  TEAM_TOOL_NAME_SET,
+} from "../src/utils/tool-activation";
 import * as path from "node:path";
 import * as fs from "node:fs";
 import * as os from "node:os";
@@ -32,6 +36,17 @@ const MODELS_CACHE_TTL = 60000; // 1 minute
 const SETTINGS_CACHE_TTL = 60000; // 1 minute
 let settingsCache: { defaultModel?: string; defaultProvider?: string } | null = null;
 let settingsCacheTime = 0;
+
+type AgentSettledEvent = { type: "agent_settled" };
+type AgentSettledHandler = (event: AgentSettledEvent) => Promise<void> | void;
+
+function onAgentSettled(pi: ExtensionAPI, handler: AgentSettledHandler): void {
+  const on = pi.on as unknown as (
+    event: "agent_settled",
+    handler: AgentSettledHandler,
+  ) => void;
+  on("agent_settled", handler);
+}
 
 /**
  * Query available models from Pi.
@@ -282,8 +297,60 @@ export default function (pi: ExtensionAPI) {
   // For leads without PI_TEAM_NAME, check if we're registered as lead for a team
   const detectedTeamName = envTeamName || findLeadTeamForSession();
   let teamName = detectedTeamName;
+  let requestAuthorized = false;
+  let cliAuthorized = false;
+  let liveLeadAuthorized = !isTeammate && !!detectedTeamName;
+  let teamToolsRegistered = false;
 
   const terminal = getTerminalAdapter();
+
+  function teamsAuthorized(): boolean {
+    return requestAuthorized || cliAuthorized || liveLeadAuthorized || isTeammate;
+  }
+
+  function activateRegisteredTeamTools(): void {
+    const registeredNames = pi.getAllTools().map((tool) => tool.name);
+    pi.setActiveTools(activateTeamTools(pi.getActiveTools(), registeredNames));
+  }
+
+  function deactivateTeamTools(): void {
+    pi.setActiveTools(removeTeamTools(pi.getActiveTools()));
+  }
+
+  pi.registerFlag("team-mode", {
+    description: "Keep pi-teams tools active for this session",
+    type: "boolean",
+    default: false,
+  });
+
+  pi.registerCommand("team", {
+    description: "Use pi-teams for one explicit request",
+    async handler(args, ctx) {
+      const request = args.trim();
+      if (!request) {
+        ctx.ui.notify("Usage: /team <request>", "warning");
+        return;
+      }
+
+      await ctx.waitForIdle();
+      registerTeamTools();
+      requestAuthorized = true;
+      activateRegisteredTeamTools();
+      pi.sendUserMessage(`Use pi-teams for this request:\n${request}`);
+    },
+  });
+
+  pi.on("tool_call", (event) => {
+    if (TEAM_TOOL_NAME_SET.has(event.toolName) && !teamsAuthorized()) {
+      return { block: true, reason: "pi-teams tools are not active for this request." };
+    }
+  });
+
+  onAgentSettled(pi, () => {
+    if (!requestAuthorized) return;
+    requestAuthorized = false;
+    if (!cliAuthorized && !liveLeadAuthorized && !isTeammate) deactivateTeamTools();
+  });
 
   // Track whether lead inbox polling has been started (to avoid duplicates)
   let leadPollingStarted = false;
@@ -324,6 +391,11 @@ export default function (pi: ExtensionAPI) {
   pi.on("session_start", async (_event, ctx) => {
     paths.ensureDirs();
     sessionCtx = ctx;
+    cliAuthorized = pi.getFlag("team-mode") === true;
+    if (cliAuthorized || liveLeadAuthorized || isTeammate) {
+      registerTeamTools();
+      activateRegisteredTeamTools();
+    }
 
     if (isTeammate) {
       if (teamName) {
@@ -399,6 +471,11 @@ export default function (pi: ExtensionAPI) {
 
   let firstTurn = true;
   pi.on("before_agent_start", async (event, ctx) => {
+    if (isTeammate) {
+      registerTeamTools();
+      activateRegisteredTeamTools();
+    }
+
     if (isTeammate && firstTurn) {
       firstTurn = false;
 
@@ -463,7 +540,10 @@ export default function (pi: ExtensionAPI) {
   }
 
   // Tools
-  pi.registerTool({
+  function registerTeamTools(): void {
+    if (teamToolsRegistered) return;
+
+    pi.registerTool({
     name: "team_create",
     label: "Create Team",
     description: "Create a new agent team.",
@@ -487,6 +567,8 @@ export default function (pi: ExtensionAPI) {
       registerLeadSession(params.team_name);
       // Update teamName and start inbox polling for the lead
       teamName = params.team_name;
+      liveLeadAuthorized = true;
+      requestAuthorized = false;
       startLeadInboxPolling();
       return {
         content: [{ type: "text", text: `Team ${params.team_name} created with default model ${effectiveDefaultModel}.` }],
@@ -826,24 +908,30 @@ export default function (pi: ExtensionAPI) {
       team_name: Type.String(),
     }),
     async execute(toolCallId, params: any, signal, onUpdate, ctx) {
-      const teamName = params.team_name;
+      const targetTeamName = params.team_name;
       try {
-        const config = await teams.readConfig(teamName);
+        const config = await teams.readConfig(targetTeamName);
         for (const member of config.members) {
-          await killTeammate(teamName, member);
+          await killTeammate(targetTeamName, member);
         }
-        const dir = paths.teamDir(teamName);
-        const tasksDir = paths.taskDir(teamName);
+        const dir = paths.teamDir(targetTeamName);
+        const tasksDir = paths.taskDir(targetTeamName);
         if (fs.existsSync(tasksDir)) fs.rmSync(tasksDir, { recursive: true });
         if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true });
 
         // Clean up orphaned agent session folders (older than 1 hour)
         const cleanedSessions = cleanupAgentSessionFolders(60 * 60 * 1000);
 
+        if (targetTeamName === teamName) {
+          teamName = null;
+          liveLeadAuthorized = false;
+          if (!cliAuthorized && !requestAuthorized && !isTeammate) deactivateTeamTools();
+        }
+
         return {
           content: [{
             type: "text",
-            text: `Team ${teamName} shut down.${cleanedSessions > 0 ? ` Cleaned up ${cleanedSessions} orphaned agent session folder(s).` : ""}`
+            text: `Team ${targetTeamName} shut down.${cleanedSessions > 0 ? ` Cleaned up ${cleanedSessions} orphaned agent session folder(s).` : ""}`
           }],
           details: { cleanedSessions }
         };
@@ -1056,9 +1144,6 @@ export default function (pi: ExtensionAPI) {
       // Create the team
       const config = teams.createTeam(params.team_name, "local-session", "lead-agent", `Predefined team: ${params.predefined_team}`, params.default_model, params.separate_windows);
       registerLeadSession(params.team_name);
-      // Update teamName and start inbox polling for the lead
-      teamName = params.team_name;
-      startLeadInboxPolling();
 
       const agentDefinitions = predefined.getAllAgentDefinitions(projectDir);
       const spawnResults: Array<{ name: string; status: string; error?: string }> = [];
@@ -1079,13 +1164,7 @@ export default function (pi: ExtensionAPI) {
           let chosenModel = agentDef.model || params.default_model || config.defaultModel;
           
           if (chosenModel && !chosenModel.includes('/')) {
-            const resolved = resolveModelWithProvider(chosenModel);
-            if (resolved) {
-              chosenModel = resolved;
-            } else if (config.defaultModel && config.defaultModel.includes('/')) {
-              const [provider] = config.defaultModel.split('/');
-              chosenModel = `${provider}/${chosenModel}`;
-            }
+            chosenModel = requireFreshOpenAICodexModel(chosenModel);
           }
 
           const useSeparateWindow = params.separate_windows ?? config.separateWindows ?? false;
@@ -1179,7 +1258,13 @@ export default function (pi: ExtensionAPI) {
       }
 
       const summary = spawnResults.map(r => `${r.name}: ${r.status}${r.error ? ` (${r.error})` : ""}`).join("\n");
-      
+
+      // Update live-lead state only after predefined team creation completes.
+      teamName = params.team_name;
+      liveLeadAuthorized = true;
+      requestAuthorized = false;
+      startLeadInboxPolling();
+
       return {
         content: [{ type: "text", text: `Team "${params.team_name}" created from predefined team "${params.predefined_team}".\n\nAgent spawn results:\n${summary}` }],
         details: { teamName: params.team_name, predefinedTeam: params.predefined_team, results: spawnResults },
@@ -1283,4 +1368,7 @@ You can now use this template with:
       };
     },
   });
+
+    teamToolsRegistered = true;
+  }
 }

@@ -1,10 +1,12 @@
 ---
-description: Coordinate multiple agents working on a project using shared task lists and messaging via tmux or Zellij.
+description: Use Teams only after explicit activation with /team or --team-mode; then coordinate agents through shared tasks and messaging.
 ---
 
 # Agent Teams
 
-Coordinate multiple agents working on a project using shared task lists and messaging via **tmux** or **Zellij**.
+Use Teams only after explicit activation. The user can send one scoped request with `/team <request>` or start Pi with the session-wide `pi --team-mode` override. An ordinary cold lead session has no Teams tool schemas.
+
+A scoped request hides the tools when the run settles unless it creates a live team. After first use, hidden tools are registered but inactive. Teammates and live leads recover activation automatically; successful shutdown of the current team hides it unless `--team-mode` is set. pi-teams changes only its own 21 tools. `/lock` remains the separate owner of read-only enforcement, and pi-subagents remains separate from pi-teams.
 
 ## Model rule
 
@@ -15,16 +17,17 @@ Coordinate multiple agents working on a project using shared task lists and mess
 - For GPT-5.6, map low-cost work to `openai-codex/gpt-5.6-luna`, balanced work to `openai-codex/gpt-5.6-terra`, and high-capability/default work to `openai-codex/gpt-5.6-sol`.
 ## Workflow
 
-1.  **Create a team**: Use `team_create(team_name="my-team")`.
-2.  **Spawn teammates**: Use `spawn_teammate` to start additional agents. Give them specific roles and initial prompts.
-3.  **Manage tasks**: 
+1.  **Activate explicitly**: Use `/team Create a team named 'my-team' for this task` for one request, or require the user to launch `pi --team-mode` for the session. Empty `/team` is a usage error; no status/off subcommands exist.
+2.  **Create a team**: After activation, use `team_create(team_name="my-team")` if the scoped request did not already create it.
+3.  **Spawn teammates**: Use `spawn_teammate` to start additional agents. Give them specific roles and initial prompts.
+4.  **Manage tasks**:
     *   `task_create`: Define work for the team.
     *   `task_list`: List all tasks to monitor progress or find available work.
     *   `task_get`: Get full details of a specific task by ID.
     *   `task_update`: Update a task's status (`pending`, `in_progress`, `completed`, `deleted`) or owner.
-4.  **Communicate**: Use `send_message` to give instructions or receive updates. Teammates should use `read_inbox` to check for messages.
-5.  **Monitor**: Use `check_teammate` to see if they are still running and if they have sent messages back.
-6.  **Cleanup**:
+5.  **Communicate**: Use `send_message` to give instructions or receive updates. Teammates should use `read_inbox` to check for messages.
+6.  **Monitor**: Use `check_teammate` to see if they are still running and if they have sent messages back.
+7.  **Cleanup**:
     *   `force_kill_teammate`: Forcibly stop a teammate and remove them from the team.
     *   `process_shutdown_approved`: Orderly removal of a teammate after they've finished.
     *   `team_delete`: Remove a team and all its associated data.

@@ -2,6 +2,15 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+- **Explicit pi-teams tool activation**: ordinary cold sessions no longer register the 21 Teams tools. Use `/team <request>` for request-scoped activation or `pi --team-mode` for a session-wide override.
+  - Empty `/team` input is a usage error; no status/off subcommands were added.
+  - Settled requests auto-hide the tools unless a live team was created. Teammates and recovered live leads activate automatically, and successful current-team shutdown auto-hides unless CLI mode remains set.
+  - After first use, inactive tools remain registered but stay outside active model schemas. pi-teams preserves unrelated tool state; `/lock` restrictions and pi-subagents remain separate.
+
+
 ## [0.9.14] - 2025-04-03
 
 ### Fixed

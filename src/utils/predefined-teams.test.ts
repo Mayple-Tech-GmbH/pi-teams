@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 import os from "node:os";
@@ -12,6 +12,7 @@ import {
   getAgentDefinition,
   getPredefinedTeam,
   saveTeamTemplate,
+  listRuntimeTeams,
 } from "./predefined-teams";
 
 describe("parseAgentFrontmatter", () => {
@@ -438,6 +439,41 @@ test-team:
   it("returns undefined for non-existent team", () => {
     const result = getPredefinedTeam("non-existent", projectDir);
     expect(result).toBeUndefined();
+  });
+});
+
+describe("listRuntimeTeams", () => {
+  it("reads an isolated home and ignores non-directories and malformed configs", () => {
+    const testHome = fs.mkdtempSync(path.join(os.tmpdir(), "pi-teams-runtime-list-"));
+    const homedirSpy = vi.spyOn(os, "homedir").mockReturnValue(testHome);
+
+    try {
+      const teamsDir = path.join(testHome, ".pi", "teams");
+      fs.mkdirSync(path.join(teamsDir, "valid"), { recursive: true });
+      fs.mkdirSync(path.join(teamsDir, "malformed"), { recursive: true });
+      fs.writeFileSync(path.join(teamsDir, "not-a-directory"), "ignored");
+      fs.writeFileSync(path.join(teamsDir, "malformed", "config.json"), "{not json");
+      fs.writeFileSync(path.join(teamsDir, "valid", "config.json"), JSON.stringify({
+        name: "runtime-team",
+        description: "A runtime team",
+        createdAt: 1234,
+        members: [
+          { name: "lead", agentType: "team-lead" },
+          { name: "builder", agentType: "teammate" },
+          { name: "reviewer", agentType: "teammate" },
+        ],
+      }));
+
+      expect(listRuntimeTeams()).toEqual([{
+        name: "runtime-team",
+        description: "A runtime team",
+        memberCount: 2,
+        createdAt: 1234,
+      }]);
+    } finally {
+      homedirSpy.mockRestore();
+      fs.rmSync(testHome, { recursive: true, force: true });
+    }
   });
 });
 

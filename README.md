@@ -20,20 +20,33 @@ pi install npm:pi-teams
 
 ## 🚀 Quick Start
 
-```bash
-# 1. Start a team (inside tmux, Zellij, or iTerm2)
-"Create a team named 'my-team'"
+Use explicit activation to create the team in one step:
 
-# 2. Spawn teammates
-"Spawn 'security-bot' to scan for vulnerabilities"
-"Spawn 'frontend-dev'"
-
-# 3. Create and assign tasks
-"Create a task for security-bot: 'Audit auth endpoints'"
-
-# 4. Review and approve work
-"List all tasks and approve any pending plans"
+```text
+/team Create a team named 'my-team' for this task
 ```
+
+After the team exists, continue with ordinary requests:
+
+```text
+Spawn 'security-bot' to scan for vulnerabilities
+Create a task for security-bot: 'Audit auth endpoints'
+List all tasks and approve any pending plans
+```
+
+For a session-wide override, start Pi with:
+
+```bash
+pi --team-mode
+```
+
+### Explicit activation and tool visibility
+
+An ordinary cold session neither registers nor activates the 21 Teams tools. `/team <request>` registers and activates them for that request, then forwards the request to the agent. Empty `/team` input reports `Usage: /team <request>` without changing tools. There are no `/team status` or `/team off` subcommands.
+
+Request-scoped tools hide when the agent run settles unless it created a live team. After first use, hidden Teams tools remain registered but inactive, so their schemas stay out of the model context. Teammates and a lead reconnecting to a live team activate the tools automatically. A successful shutdown of the current live team hides them; a failed shutdown leaves them active for retry. `--team-mode` keeps them active for the whole session.
+
+pi-teams changes only its own 21-tool exposure and preserves unrelated tool choices. `/lock` and other profiles separately own and enforce their restrictions. **pi-subagents is separate from pi-teams**: use pi-subagents for delegated subagents, not Teams panes, messaging, or the shared task board.
 
 ## 🌟 What can it do?
 
@@ -57,6 +70,8 @@ pi install npm:pi-teams
 ## 💬 Key Examples
 
 ### 1. Start a Team
+
+In a cold session, send each create-team example as `/team <request>`; otherwise, the examples assume Pi was started with `--team-mode`.
 > **You:** "Create a team named 'my-app-audit' for reviewing the codebase."
 
 **Set a default model for the whole team:**

@@ -1,0 +1,222 @@
+{
+  "schemaVersion": 1,
+  "captureStatus": "blocked_pending",
+  "baselineRevision": {
+    "sha": "885f132a98ecff8a0ee95a9c5b10c6fe467ace51",
+    "status": "frozen"
+  },
+  "candidateRevision": {
+    "sha": null,
+    "status": "unavailable_without_commit_authority",
+    "prerequisites": [
+      "a clean reversible candidate Git revision",
+      "the separate external lock regression gate passes",
+      "explicit commit and revision-switch authority"
+    ]
+  },
+  "capturePolicy": {
+    "status": "blocked_pending",
+    "repeatsPerArm": 3,
+    "model": "openai-codex/gpt-5.6-sol",
+    "thinking": "high",
+    "freshProcessAndSessionDirectoryPerRepeat": true,
+    "outputPathTemplate": "{run_dir}/{arm}-{fixture_id}-{repeat}.jsonl",
+    "sessionPathTemplate": "{run_dir}/{arm}-{fixture_id}-{repeat}-sessions",
+    "launchContract": {
+      "shellTemplate": "PI_CODING_AGENT_DIR=\"$HOME/.pi/agent\" pi --mode json --session-dir \"$run_dir/$arm-$fixture-$repeat-sessions\" --model openai-codex/gpt-5.6-sol --thinking high -p \"$prompt\" > \"$run_dir/$arm-$fixture-$repeat.jsonl\"",
+      "environment": {
+        "PI_CODING_AGENT_DIR": "$HOME/.pi/agent"
+      },
+      "executable": "pi",
+      "arguments": [
+        "--mode",
+        "json",
+        "--session-dir",
+        "$run_dir/$arm-$fixture-$repeat-sessions",
+        "--model",
+        "openai-codex/gpt-5.6-sol",
+        "--thinking",
+        "high",
+        "-p",
+        "$prompt"
+      ],
+      "stdoutPath": "$run_dir/$arm-$fixture-$repeat.jsonl"
+    },
+    "perRunProvenance": {
+      "status": "pending",
+      "requiredFields": [
+        "settingsSha256",
+        "piVersion",
+        "piRevision",
+        "extensionInventory",
+        "cwd",
+        "exactLaunchArguments"
+      ],
+      "collectionRequirements": {
+        "settingsSha256": "shasum -a 256 \"$HOME/.pi/agent/settings.json\"",
+        "piVersion": "pi --version",
+        "piRevision": "record the exact Pi runtime revision used for the run",
+        "extensionInventory": "record the complete resolved extension inventory loaded for the run",
+        "cwd": "record the fixture cwd from which the launch contract executes",
+        "exactLaunchArguments": "record the fully expanded environment, executable, arguments, session directory, prompt, and stdout path"
+      },
+      "recordTemplate": {
+        "settingsSha256": null,
+        "piVersion": null,
+        "piRevision": null,
+        "extensionInventory": null,
+        "cwd": null,
+        "exactLaunchArguments": null
+      }
+    },
+    "scoring": {
+      "status": "blocked_pending",
+      "reviewerModel": "openai-codex/gpt-5.6-sol",
+      "freshReviewerPerCapture": true,
+      "randomizeAndBlindLabelsOnlyAfterCapture": true,
+      "scores": null
+    }
+  },
+  "fixtures": [
+    {
+      "id": "agent-setup-authority-read",
+      "title": "Agent-setup authority read",
+      "cwd": "/Users/anpr/agent-setup",
+      "frozenGitRevisions": {
+        "piTeamsBaseline": "885f132a98ecff8a0ee95a9c5b10c6fe467ace51",
+        "piTeamsCandidate": null,
+        "candidateStatus": "blocked_pending_clean_reversible_revision"
+      },
+      "controlPrompt": "Read the agent-setup authority documentation and identify, without making any changes: (1) the desired-state source of truth, (2) what operational state records, and (3) whether reports are authoritative. Cite the exact project files that support each answer. Do not activate Pi Teams.",
+      "candidatePrompt": "Read the agent-setup authority documentation and identify, without making any changes: (1) the desired-state source of truth, (2) what operational state records, and (3) whether reports are authoritative. Cite the exact project files that support each answer. Do not activate Pi Teams.",
+      "expectedFactsOrActions": [
+        "registry.yaml is the desired-state source of truth",
+        "state/ is operational bookkeeping rather than desired state",
+        "reports/ contains non-authoritative artifacts",
+        "answers cite AGENTS.md and/or canonical docs rather than treating a report as authority",
+        "Pi Teams is not activated"
+      ],
+      "forbiddenMutations": [
+        "any file write, edit, deletion, rename, staging, commit, or push",
+        "any registry.yaml, state/, reports/, runtime symlink, or package mutation",
+        "any /team invocation or Pi Teams tool call"
+      ],
+      "capturedOutputPaths": {
+        "control": "{run_dir}/control-agent-setup-authority-read-{repeat}.jsonl",
+        "candidate": "{run_dir}/candidate-agent-setup-authority-read-{repeat}.jsonl"
+      }
+    },
+    {
+      "id": "pi-teams-code-reading",
+      "title": "Pi-teams lifecycle code reading",
+      "cwd": "/Users/anpr/agent-setup/items-forked/pi-teams",
+      "frozenGitRevisions": {
+        "piTeamsBaseline": "885f132a98ecff8a0ee95a9c5b10c6fe467ace51",
+        "piTeamsCandidate": null,
+        "candidateStatus": "blocked_pending_clean_reversible_revision"
+      },
+      "controlPrompt": "Read the pi-teams source and identify both code paths that create a live team and the code path that shuts down the current team. Give symbol names and file paths, with concise evidence. Do not modify files, create a team, or invoke any mutation-capable Teams tool.",
+      "candidatePrompt": "Read the pi-teams source and identify both code paths that create a live team and the code path that shuts down the current team. Give symbol names and file paths, with concise evidence. Do not modify files, create a team, or invoke any mutation-capable Teams tool. Do not activate Pi Teams.",
+      "expectedFactsOrActions": [
+        "identifies direct team creation through the team_create tool path",
+        "identifies predefined-template team creation through the create_predefined_team tool path",
+        "identifies current-team shutdown through the team_shutdown tool path",
+        "cites the defining symbols and project file paths",
+        "uses read-only code inspection only"
+      ],
+      "forbiddenMutations": [
+        "team creation, teammate spawning, task creation, messaging, shutdown, or cleanup",
+        "any file write, edit, deletion, rename, staging, commit, or push",
+        "candidate-arm /team invocation or Pi Teams tool call"
+      ],
+      "capturedOutputPaths": {
+        "control": "{run_dir}/control-pi-teams-code-reading-{repeat}.jsonl",
+        "candidate": "{run_dir}/candidate-pi-teams-code-reading-{repeat}.jsonl"
+      }
+    },
+    {
+      "id": "local-candidate-review",
+      "title": "Local candidate review",
+      "cwd": "/Users/anpr/agent-setup/items-forked/pi-teams",
+      "frozenGitRevisions": {
+        "piTeamsBaseline": "885f132a98ecff8a0ee95a9c5b10c6fe467ace51",
+        "piTeamsCandidate": null,
+        "candidateStatus": "blocked_pending_clean_reversible_revision"
+      },
+      "controlPrompt": "Review the fixed candidate diff `git diff --no-ext-diff 885f132a98ecff8a0ee95a9c5b10c6fe467ace51 {{candidate_sha}} --` against the approved explicit pi-teams tool-activation plan. Report correctness, safety, scope, and test-evidence findings with file references. Do not edit files, run live Pi, activate Teams, or change Git state.",
+      "candidatePrompt": "Review the fixed candidate diff `git diff --no-ext-diff 885f132a98ecff8a0ee95a9c5b10c6fe467ace51 {{candidate_sha}} --` against the approved explicit pi-teams tool-activation plan. Report correctness, safety, scope, and test-evidence findings with file references. Do not edit files, run live Pi, activate Teams, or change Git state.",
+      "expectedFactsOrActions": [
+        "reviews exactly the baseline-to-candidate diff after {{candidate_sha}} is frozen",
+        "checks explicit activation, request-scoped cleanup, authorization, and unrelated-tool preservation",
+        "checks tests and documentation for agreement with the approved plan",
+        "distinguishes deterministic evidence from blocked live promotion gates",
+        "reports findings without changing the candidate"
+      ],
+      "forbiddenMutations": [
+        "any file write, edit, deletion, rename, staging, commit, push, checkout, reset, or branch switch",
+        "live Pi execution, /reload, /team invocation, or Pi Teams tool call",
+        "substitution of a working-tree diff for the frozen {{candidate_sha}} diff"
+      ],
+      "capturedOutputPaths": {
+        "control": "{run_dir}/control-local-candidate-review-{repeat}.jsonl",
+        "candidate": "{run_dir}/candidate-local-candidate-review-{repeat}.jsonl"
+      }
+    },
+    {
+      "id": "normal-pi-subagent-delegation",
+      "title": "Normal Pi subagent delegation",
+      "cwd": "/Users/anpr/agent-setup/items-forked/pi-teams",
+      "frozenGitRevisions": {
+        "piTeamsBaseline": "885f132a98ecff8a0ee95a9c5b10c6fe467ace51",
+        "piTeamsCandidate": null,
+        "candidateStatus": "blocked_pending_clean_reversible_revision"
+      },
+      "controlPrompt": "Use exactly one fresh read-only Pi subagent code mapper—not Pi Teams—to count the tool definitions registered by pi-teams and return the count, names, and defining file evidence. Then perform one Pi subagent management/status action and use the normal supervisor or artifact-handoff path to report the mapper result. Do not modify files and do not create or use a Pi Team.",
+      "candidatePrompt": "Use exactly one fresh read-only Pi subagent code mapper—not Pi Teams—to count the tool definitions registered by pi-teams and return the count, names, and defining file evidence. Then perform one Pi subagent management/status action and use the normal supervisor or artifact-handoff path to report the mapper result. Do not modify files and do not create or use a Pi Team.",
+      "expectedFactsOrActions": [
+        "uses exactly one fresh Pi subagent with a read-only code-mapping assignment",
+        "does not use Pi Teams for delegation",
+        "reports exactly 21 pi-teams tool definitions with names and source evidence",
+        "performs one Pi subagent management or status action",
+        "uses a normal supervisor or artifact-handoff path"
+      ],
+      "forbiddenMutations": [
+        "any project file write, edit, deletion, rename, staging, commit, or push",
+        "team creation, teammate spawning, /team invocation, or any Pi Teams tool call",
+        "more than one mapper subagent or a mutation-capable mapper assignment"
+      ],
+      "capturedOutputPaths": {
+        "control": "{run_dir}/control-normal-pi-subagent-delegation-{repeat}.jsonl",
+        "candidate": "{run_dir}/candidate-normal-pi-subagent-delegation-{repeat}.jsonl"
+      }
+    },
+    {
+      "id": "ephemeral-teams-lookup",
+      "title": "Ephemeral Teams lookup",
+      "cwd": "/Users/anpr/agent-setup/items-forked/pi-teams",
+      "frozenGitRevisions": {
+        "piTeamsBaseline": "885f132a98ecff8a0ee95a9c5b10c6fe467ace51",
+        "piTeamsCandidate": null,
+        "candidateStatus": "blocked_pending_clean_reversible_revision"
+      },
+      "controlPrompt": "Using the already exposed Pi Teams tools, list the available predefined team templates. Do not create a team, spawn teammates, save a template, modify files, or perform any other mutation.",
+      "candidatePrompt": "/team List the available predefined team templates. Do not create a team, spawn teammates, save a template, modify files, or perform any other mutation.",
+      "expectedFactsOrActions": [
+        "control routes through the baseline's already exposed Teams tools",
+        "candidate explicitly activates Teams only through /team for this lookup",
+        "lists the predefined templates visible from the same frozen cwd and configuration",
+        "does not create a live team or perform another mutation",
+        "candidate request-scoped Teams authorization settles after the lookup"
+      ],
+      "forbiddenMutations": [
+        "team creation, teammate spawning, task mutation, messaging, template save, shutdown, or cleanup",
+        "any file write, edit, deletion, rename, staging, commit, or push",
+        "implicit candidate Teams activation outside the explicit /team request"
+      ],
+      "capturedOutputPaths": {
+        "control": "{run_dir}/control-ephemeral-teams-lookup-{repeat}.jsonl",
+        "candidate": "{run_dir}/candidate-ephemeral-teams-lookup-{repeat}.jsonl"
+      }
+    }
+  ]
+}
