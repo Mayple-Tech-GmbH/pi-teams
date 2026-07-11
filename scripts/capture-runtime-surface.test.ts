@@ -33,7 +33,7 @@ afterEach(() => {
 });
 
 describe("capture-runtime-surface probe", () => {
-  it("registers only a command and appends canonical command and before-agent snapshots", async () => {
+  it("registers one output flag, only a command, and appends canonical command and before-agent snapshots", async () => {
     const directory = createTemporaryDirectory();
     const output = path.join(directory, "snapshots.jsonl");
     process.argv = ["node", "pi", "-e", "./scripts/capture-runtime-surface.ts", "--surface-output", output];
@@ -44,7 +44,9 @@ describe("capture-runtime-surface probe", () => {
     const commands = new Map<string, any>();
     const handlers = new Map<string, (event: unknown) => void>();
     const api = {
+      registerFlag: vi.fn(),
       registerCommand: vi.fn((name: string, command: any) => commands.set(name, command)),
+      registerTool: vi.fn(),
       on: vi.fn((event: string, handler: (event: unknown) => void) => handlers.set(event, handler)),
       getActiveTools: vi.fn(() => ["zeta", "alpha"]),
       getAllTools: vi.fn(() => [
@@ -64,8 +66,14 @@ describe("capture-runtime-surface probe", () => {
     const { default: extension } = await import("./capture-runtime-surface.js");
     extension(api as any);
 
+    expect(api.registerFlag).toHaveBeenCalledTimes(1);
+    expect(api.registerFlag).toHaveBeenCalledWith("surface-output", {
+      description: "Path to append canonical runtime surface snapshots as JSONL",
+      type: "string",
+    });
     expect([...commands.keys()]).toEqual(["capture-runtime-surface"]);
     expect(api.registerCommand).toHaveBeenCalledTimes(1);
+    expect(api.registerTool).not.toHaveBeenCalled();
     expect(api.on).toHaveBeenCalledTimes(1);
     expect([...handlers.keys()]).toEqual(["before_agent_start"]);
 
@@ -108,11 +116,13 @@ describe("capture-runtime-surface probe", () => {
     ["a following option", ["--surface-output", "--other-option"]],
     ["an empty assignment", ["--surface-output="]],
     ["a missing separated value", ["--surface-output"]],
-  ])("rejects %s before registration or writing", async (_description, outputArgs) => {
+  ])("rejects %s before command/event registration or writing", async (_description, outputArgs) => {
     const directory = createTemporaryDirectory();
     process.argv = ["node", "pi", "-e", "./scripts/capture-runtime-surface.ts", ...outputArgs];
     const api = {
+      registerFlag: vi.fn(),
       registerCommand: vi.fn(),
+      registerTool: vi.fn(),
       on: vi.fn(),
     };
 
@@ -125,7 +135,9 @@ describe("capture-runtime-surface probe", () => {
     }
 
     expect(thrown).toEqual(new Error("capture-runtime-surface requires --surface-output <jsonl-path>"));
+    expect(api.registerFlag).toHaveBeenCalledTimes(1);
     expect(api.registerCommand).not.toHaveBeenCalled();
+    expect(api.registerTool).not.toHaveBeenCalled();
     expect(api.on).not.toHaveBeenCalled();
     expect(fs.readdirSync(directory)).toEqual([]);
   });
@@ -136,7 +148,9 @@ describe("capture-runtime-surface probe", () => {
     process.argv = ["node", "pi", "-e", "./scripts/capture-runtime-surface.ts", `--surface-output=${output}`];
     const commands = new Map<string, any>();
     const api = {
+      registerFlag: vi.fn(),
       registerCommand: vi.fn((name: string, command: any) => commands.set(name, command)),
+      registerTool: vi.fn(),
       on: vi.fn(),
       getActiveTools: vi.fn(() => []),
       getAllTools: vi.fn(() => []),

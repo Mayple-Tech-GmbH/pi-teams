@@ -49,6 +49,11 @@ function canonicalCommands(commands: SlashCommandInfo[]): CanonicalValue[] {
 }
 
 export default function captureRuntimeSurface(pi: ExtensionAPI): void {
+  pi.registerFlag("surface-output", {
+    description: "Path to append canonical runtime surface snapshots as JSONL",
+    type: "string",
+  });
+
   const surfaceOutput = readSurfaceOutput(process.argv);
 
   const appendSnapshot = (label: string): void => {
