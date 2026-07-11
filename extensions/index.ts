@@ -40,6 +40,27 @@ let settingsCacheTime = 0;
 type AgentSettledEvent = { type: "agent_settled" };
 type AgentSettledHandler = (event: AgentSettledEvent) => Promise<void> | void;
 
+type LockModeCoordinationRegistry = {
+  version: 1;
+  postUnlockCleanups: Map<string, () => void>;
+};
+
+const LOCK_MODE_COORDINATION_KEY = Symbol.for("pi.lock-mode.coordination.v1");
+const LOCK_MODE_COORDINATION_OWNER = "pi-teams";
+
+function getLockModeCoordinationRegistry(): LockModeCoordinationRegistry | null {
+  const registry = (globalThis as any)[LOCK_MODE_COORDINATION_KEY];
+  if (
+    registry === null
+    || typeof registry !== "object"
+    || registry.version !== 1
+    || !(registry.postUnlockCleanups instanceof Map)
+  ) {
+    return null;
+  }
+  return registry as LockModeCoordinationRegistry;
+}
+
 function onAgentSettled(pi: ExtensionAPI, handler: AgentSettledHandler): void {
   const on = pi.on as unknown as (
     event: "agent_settled",
@@ -317,6 +338,10 @@ export default function (pi: ExtensionAPI) {
     pi.setActiveTools(removeTeamTools(pi.getActiveTools()));
   }
 
+  const postUnlockCleanup = (): void => {
+    if (!teamsAuthorized()) deactivateTeamTools();
+  };
+
   pi.registerFlag("team-mode", {
     description: "Keep pi-teams tools active for this session",
     type: "boolean",
@@ -392,6 +417,10 @@ export default function (pi: ExtensionAPI) {
     paths.ensureDirs();
     sessionCtx = ctx;
     cliAuthorized = pi.getFlag("team-mode") === true;
+    getLockModeCoordinationRegistry()?.postUnlockCleanups.set(
+      LOCK_MODE_COORDINATION_OWNER,
+      postUnlockCleanup,
+    );
     if (cliAuthorized || liveLeadAuthorized || isTeammate) {
       registerTeamTools();
       activateRegisteredTeamTools();
@@ -466,6 +495,13 @@ export default function (pi: ExtensionAPI) {
           lastHeartbeatAt: Date.now(),
         });
       }
+    }
+  });
+
+  pi.on("session_shutdown", () => {
+    const registry = getLockModeCoordinationRegistry();
+    if (registry?.postUnlockCleanups.get(LOCK_MODE_COORDINATION_OWNER) === postUnlockCleanup) {
+      registry.postUnlockCleanups.delete(LOCK_MODE_COORDINATION_OWNER);
     }
   });
 

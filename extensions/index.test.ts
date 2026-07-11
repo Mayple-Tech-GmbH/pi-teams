@@ -45,6 +45,18 @@ vi.mock("../src/utils/predefined-teams", async (importOriginal) => ({
 }));
 import { TEAM_TOOL_NAMES } from "../src/utils/tool-activation";
 
+const LOCK_MODE_COORDINATION_KEY = Symbol.for("pi.lock-mode.coordination.v1");
+const LOCK_MODE_COORDINATION_OWNER = "pi-teams";
+
+type LockModeCoordinationRegistry = {
+  version: 1;
+  postUnlockCleanups: Map<string, () => void>;
+};
+
+function setLockModeCoordinationRegistry(value: unknown): void {
+  (globalThis as any)[LOCK_MODE_COORDINATION_KEY] = value;
+}
+
 type Handler = (event: any, ctx: any) => any;
 
 type HarnessOptions = {
@@ -167,6 +179,7 @@ beforeAll(() => {
 afterEach(() => {
   vi.clearAllTimers();
   fs.rmSync(path.join(testHome, ".pi"), { recursive: true, force: true });
+  delete (globalThis as any)[LOCK_MODE_COORDINATION_KEY];
 });
 
 afterAll(() => {
@@ -242,6 +255,139 @@ describe("explicit Teams activation", () => {
     ]);
     expect(await harness.emit("tool_call", { type: "tool_call", toolName: "read" }))
       .toEqual([undefined]);
+  });
+});
+
+describe("lock-mode post-unlock coordination", () => {
+  it("removes restored request-scoped Teams tools after unlock while preserving baseline tools", async () => {
+    const registry: LockModeCoordinationRegistry = {
+      version: 1,
+      postUnlockCleanups: new Map(),
+    };
+    setLockModeCoordinationRegistry(registry);
+    const harness = await createHarness();
+    await harness.emit("session_start");
+    await harness.command("team", "coordinate this");
+    const preLockTools = harness.activeTools;
+
+    harness.api.setActiveTools(["read", "unrelated_active"]);
+    await harness.emit("agent_settled");
+    harness.api.setActiveTools(preLockTools);
+    const cleanup = registry.postUnlockCleanups.get(LOCK_MODE_COORDINATION_OWNER);
+    expect(cleanup).toBeTypeOf("function");
+    cleanup?.();
+
+    expect(harness.activeTools).toEqual(["read", "unrelated_active"]);
+    expect(harness.activeTools.filter((name) => TEAM_TOOL_NAMES.includes(name as any))).toEqual([]);
+  });
+
+  it("preserves Teams after unlock while request authorization remains active", async () => {
+    const registry: LockModeCoordinationRegistry = {
+      version: 1,
+      postUnlockCleanups: new Map(),
+    };
+    setLockModeCoordinationRegistry(registry);
+    const harness = await createHarness();
+    await harness.emit("session_start");
+    await harness.command("team", "coordinate this");
+    const cleanup = registry.postUnlockCleanups.get(LOCK_MODE_COORDINATION_OWNER);
+
+    expect(cleanup).toBeTypeOf("function");
+    cleanup?.();
+    expect(harness.activeTools).toEqual(["read", "unrelated_active", ...TEAM_TOOL_NAMES]);
+  });
+
+  it.each<[string, HarnessOptions]>([
+    ["--team-mode", { flags: { "team-mode": true } }],
+    ["teammate", { teammate: "builder", teamName: "alpha" }],
+  ])("preserves Teams after unlock for %s authorization", async (_mode, options) => {
+    const registry: LockModeCoordinationRegistry = {
+      version: 1,
+      postUnlockCleanups: new Map(),
+    };
+    setLockModeCoordinationRegistry(registry);
+    if (options.teammate) {
+      fs.mkdirSync(path.join(testHome, ".pi", "teams", "alpha"), { recursive: true });
+    }
+    const harness = await createHarness(options);
+    await harness.emit("session_start");
+
+    const cleanup = registry.postUnlockCleanups.get(LOCK_MODE_COORDINATION_OWNER);
+    expect(cleanup).toBeTypeOf("function");
+    cleanup?.();
+
+    expect(harness.activeTools).toEqual(["read", "unrelated_active", ...TEAM_TOOL_NAMES]);
+  });
+
+  it("preserves Teams after unlock for live-lead authorization", async () => {
+    const registry: LockModeCoordinationRegistry = {
+      version: 1,
+      postUnlockCleanups: new Map(),
+    };
+    setLockModeCoordinationRegistry(registry);
+    const harness = await createHarness();
+    await harness.emit("session_start");
+    await harness.command("team", "create alpha");
+    await harness.execute("team_create", { team_name: "alpha" });
+    await harness.emit("agent_settled");
+
+    const cleanup = registry.postUnlockCleanups.get(LOCK_MODE_COORDINATION_OWNER);
+    expect(cleanup).toBeTypeOf("function");
+    cleanup?.();
+
+    expect(harness.activeTools).toEqual(["read", "unrelated_active", ...TEAM_TOOL_NAMES]);
+  });
+
+  it.each([
+    ["absent", undefined],
+    ["wrong version", { version: 2, postUnlockCleanups: new Map() }],
+    ["non-Map callbacks", { version: 1, postUnlockCleanups: {} }],
+    ["null registry", null],
+  ])("ignores an %s coordination registry", async (_case, registry) => {
+    setLockModeCoordinationRegistry(registry);
+    const harness = await createHarness();
+
+    await expect(harness.emit("session_start")).resolves.toEqual([undefined]);
+    await harness.command("team", "coordinate this");
+
+    expect(harness.activeTools).toEqual(["read", "unrelated_active", ...TEAM_TOOL_NAMES]);
+  });
+
+  it("replaces the pi-teams owner on repeated session_start without accumulating callbacks", async () => {
+    const registry: LockModeCoordinationRegistry = {
+      version: 1,
+      postUnlockCleanups: new Map([["unrelated-owner", vi.fn()]]),
+    };
+    setLockModeCoordinationRegistry(registry);
+    const harness = await createHarness();
+
+    await harness.emit("session_start");
+    const firstCallback = registry.postUnlockCleanups.get(LOCK_MODE_COORDINATION_OWNER);
+    await harness.emit("session_start");
+
+    expect(firstCallback).toBeTypeOf("function");
+    expect(registry.postUnlockCleanups.get(LOCK_MODE_COORDINATION_OWNER)).toBe(firstCallback);
+    expect([...registry.postUnlockCleanups.keys()]).toEqual(["unrelated-owner", LOCK_MODE_COORDINATION_OWNER]);
+  });
+
+  it("shutdown removes only its own callback and cannot delete a newer replacement", async () => {
+    const registry: LockModeCoordinationRegistry = {
+      version: 1,
+      postUnlockCleanups: new Map(),
+    };
+    setLockModeCoordinationRegistry(registry);
+    const staleHarness = await createHarness();
+    await staleHarness.emit("session_start");
+    const staleCallback = registry.postUnlockCleanups.get(LOCK_MODE_COORDINATION_OWNER);
+    const currentHarness = await createHarness();
+    await currentHarness.emit("session_start");
+    const currentCallback = registry.postUnlockCleanups.get(LOCK_MODE_COORDINATION_OWNER);
+
+    expect(currentCallback).not.toBe(staleCallback);
+    await staleHarness.emit("session_shutdown");
+    expect(registry.postUnlockCleanups.get(LOCK_MODE_COORDINATION_OWNER)).toBe(currentCallback);
+    await currentHarness.emit("session_shutdown");
+    expect(registry.postUnlockCleanups.has(LOCK_MODE_COORDINATION_OWNER)).toBe(false);
   });
 });
 
