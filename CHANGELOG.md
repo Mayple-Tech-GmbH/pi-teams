@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
   - Empty `/team` input is a usage error; no status/off subcommands were added.
   - Settled requests auto-hide the tools unless a live team was created. Teammates and recovered live leads activate automatically, and successful current-team shutdown auto-hides unless CLI mode remains set.
   - After first use, inactive tools remain registered but stay outside active model schemas. pi-teams preserves unrelated tool state; `/lock` restrictions and pi-subagents remain separate.
+  - Read-only enforcement remains entirely owned by `/lock`; pi-teams never changes lock allowlists or call decisions. A narrow optional version-1 post-unlock callback only reapplies pi-teams authorization/deactivation after `/lock` restores its snapshot; it is not a generic profile manager.
 
 
 ## [0.9.14] - 2025-04-03

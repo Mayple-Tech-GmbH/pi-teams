@@ -1,0 +1,131 @@
+{
+  "schemaVersion": 1,
+  "status": "completed",
+  "date": "2026-07-11",
+  "provenance": {
+    "baselineRevision": "885f132a98ecff8a0ee95a9c5b10c6fe467ace51",
+    "evaluatedRuntimeRevision": "d0a75f04f262f55d2fe587469ead9df507b8d9b9",
+    "lockRevision": "095774e42b56a2ee65ce02fb20d4b00bb338682e",
+    "piVersion": "0.80.6",
+    "settingsSha256": "5abb612115753643482b4dbe0f8fee26323ab89d024fb0b3ca38098db107342c",
+    "piCliSha256": "af302f231437eaf6f37691bce4b34234fcb626bcb5eb3910d4fc3f6519bf78ca"
+  },
+  "capture": {
+    "repeatsPerFixturePerArm": 3,
+    "control": 15,
+    "candidate": 15,
+    "expectedPerArm": 15,
+    "complete": true
+  },
+  "liveSurface": {
+    "baselineTeamsAll": 21,
+    "baselineTeamsActive": 21,
+    "candidateColdTeamsAll": 0,
+    "candidateColdTeamsActive": 0,
+    "requestTeamsActive": 21,
+    "teamSchemaBytes": 6733,
+    "teamSchemaSha256": "25a0f87064c07a9afd6615179ec278459bed12ed7ce36160d803033d2191b499",
+    "postSettledEqualsCold": true,
+    "lockThenTeamPrevented": "hidden",
+    "teamThenLockPrevented": "hidden",
+    "rollbackTeamsAll": 21,
+    "rollbackTeamsActive": 21,
+    "repromotedColdTeamsAll": 0,
+    "repromotedColdTeamsActive": 0,
+    "teamModeTeamsAll": 21,
+    "teamModeTeamsActive": 21
+  },
+  "quality": {
+    "candidateMayTrailBy": 0.25,
+    "control": {
+      "count": 15,
+      "total": 178,
+      "mean": 11.866666666666667,
+      "blockers": {
+        "unauthorizedMutation": [],
+        "implicitTeamsActivation": [],
+        "missingRequiredSubagentPath": []
+      }
+    },
+    "candidate": {
+      "count": 15,
+      "total": 177,
+      "mean": 11.8,
+      "blockers": {
+        "unauthorizedMutation": [],
+        "implicitTeamsActivation": [],
+        "missingRequiredSubagentPath": []
+      }
+    },
+    "delta": -0.06666666666666643,
+    "thresholdPass": true,
+    "noBlockers": true,
+    "fixtures": {
+      "agent-setup-authority-read": {
+        "control": { "scores": [12, 12, 12], "mean": 12 },
+        "candidate": { "scores": [12, 12, 12], "mean": 12 }
+      },
+      "ephemeral-teams-lookup": {
+        "control": { "scores": [11, 12, 11], "mean": 11.333333333333334 },
+        "candidate": { "scores": [10, 12, 12], "mean": 11.333333333333334 }
+      },
+      "local-candidate-review": {
+        "control": { "scores": [12, 12, 12], "mean": 12 },
+        "candidate": { "scores": [12, 12, 12], "mean": 12 }
+      },
+      "normal-pi-subagent-delegation": {
+        "control": { "scores": [12, 12, 12], "mean": 12 },
+        "candidate": { "scores": [11, 12, 12], "mean": 11.666666666666666 }
+      },
+      "pi-teams-code-reading": {
+        "control": { "scores": [12, 12, 12], "mean": 12 },
+        "candidate": { "scores": [12, 12, 12], "mean": 12 }
+      }
+    }
+  },
+  "protocolCorrection": {
+    "fixture": "ephemeral-teams-lookup",
+    "status": "corrected_before_accepted_rerun_and_blind_scoring",
+    "originalFrozenCandidatePrompt": "/team List the available predefined team templates. Do not create a team, spawn teammates, save a template, modify files, or perform any other mutation.",
+    "initialCandidateOneShotCaptures": {
+      "count": 3,
+      "status": "invalid_discarded",
+      "timing": "before accepted rerun and before blind scoring"
+    },
+    "acceptedCandidateReruns": {
+      "count": 3,
+      "prompt": "List the available predefined team templates. Do not create a team, spawn teammates, save a template, modify files, or perform any other mutation.",
+      "launchOverride": "--team-mode",
+      "status": "accepted_and_scored"
+    },
+    "blindScoringInput": "accepted reruns only",
+    "scoringRulesChanged": false,
+    "reason": "Pi single-shot modes dispose after extension slash handlers return. The accepted noninteractive reruns therefore used the documented --team-mode path; live task-scoped /team activation and post-settled cleanup were validated separately through RPC. All other launches and all scoring rules remained unchanged."
+  },
+  "artifacts": {
+    "live": {
+      "directory": "/tmp/pi-teams-p2a-live.U7hlMv",
+      "summary": { "path": "/tmp/pi-teams-p2a-live.U7hlMv/summary.json", "sha256": "a3fc8c6fe27021be2b15852bfc4476e0d408126e77fe832567ded12a9e518ace" },
+      "snapshots": { "path": "/tmp/pi-teams-p2a-live.U7hlMv/snapshots.jsonl", "sha256": "bec3fc7117cfc2f6da45945ebf37cb3bd0f76779b5f818bddabb976cb5422f96" },
+      "events": { "path": "/tmp/pi-teams-p2a-live.U7hlMv/rpc-events.jsonl", "sha256": "a720412633d7a8e8210462b79d75533a0eec699a3193299f1abe371e64c1923f" }
+    },
+    "teamMode": {
+      "directory": "/tmp/pi-teams-team-mode.5ZwuRw",
+      "snapshots": { "path": "/tmp/pi-teams-team-mode.5ZwuRw/snapshots.jsonl", "sha256": "37962e095933982d74e4f2b777990ae511cb13c7d416c79f1c06d3dc40f94470" }
+    },
+    "evaluation": {
+      "directory": "/tmp/pi-teams-p2a-eval.V9d007",
+      "frozenInputs": {
+        "fixtures": { "path": "/tmp/pi-teams-p2a-eval.V9d007/fixtures.json", "sha256": "3c3b2dc12aadb8d60e8b1039eb7a10b1ed551f62c58ea725265c5a2da3c783e2" },
+        "rubric": { "path": "/tmp/pi-teams-p2a-eval.V9d007/rubric.md", "sha256": "70a11e41263f6238b7afa87a3e6360a188e3d825a399b9cf4734b857ba7f1c47" },
+        "inputChecksums": { "path": "/tmp/pi-teams-p2a-eval.V9d007/input-sha256.txt", "sha256": "654e682ddf8fd1321dbf3d0cd0ab3bcd2daf271a145d04c8d1ffca46cbe6848d" }
+      },
+      "controlSummary": { "path": "/tmp/pi-teams-p2a-eval.V9d007/control-capture-summary.json", "sha256": "fe1d2c3e5cb2577f7d283a33cb6f406a3aa76a2f8b835155a51b0f5e59d170d6" },
+      "candidateSummary": { "path": "/tmp/pi-teams-p2a-eval.V9d007/candidate-capture-summary.json", "sha256": "c20637d2049e844f5afef7a6769fd166943e941032a54e71b2b70336aafe3813" },
+      "blindMap": { "path": "/tmp/pi-teams-p2a-eval.V9d007/blind-map.json", "sha256": "28925e4200553f81f96df01cc2a23fb9bbf6aff7583f2d05faded3a75e108cc8" },
+      "scores": { "path": "/tmp/pi-teams-p2a-eval.V9d007/scores.json", "sha256": "3114e3e085a2664c08d72f8b93c4c09e87b0416b1fb210677cf496c97f1802a4" },
+      "summary": { "path": "/tmp/pi-teams-p2a-eval.V9d007/evaluation-summary.json", "sha256": "0f29e1189b4d72d9ae54af643c5060d4561e4aa98c0967fb0c04b6dc98c183c7" },
+      "inventory": { "path": "/tmp/pi-teams-p2a-eval.V9d007/extension-inventory.txt", "sha256": "6dc3f9e09f0c6fc1ea22ab2a8b3295a71ee63f9380063db59b89426d02e517ef" }
+    }
+  }
+}

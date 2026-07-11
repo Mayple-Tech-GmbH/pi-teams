@@ -1,21 +1,17 @@
 {
   "schemaVersion": 1,
-  "captureStatus": "blocked_pending",
+  "captureStatus": "completed",
   "baselineRevision": {
     "sha": "885f132a98ecff8a0ee95a9c5b10c6fe467ace51",
     "status": "frozen"
   },
   "candidateRevision": {
-    "sha": null,
-    "status": "unavailable_without_commit_authority",
-    "prerequisites": [
-      "a clean reversible candidate Git revision",
-      "the separate external lock regression gate passes",
-      "explicit commit and revision-switch authority"
-    ]
+    "sha": "d0a75f04f262f55d2fe587469ead9df507b8d9b9",
+    "status": "evaluated",
+    "lockRevisionSha": "095774e42b56a2ee65ce02fb20d4b00bb338682e"
   },
   "capturePolicy": {
-    "status": "blocked_pending",
+    "status": "completed",
     "repeatsPerArm": 3,
     "model": "openai-codex/gpt-5.6-sol",
     "thinking": "high",
@@ -43,7 +39,7 @@
       "stdoutPath": "$run_dir/$arm-$fixture-$repeat.jsonl"
     },
     "perRunProvenance": {
-      "status": "pending",
+      "status": "completed",
       "requiredFields": [
         "settingsSha256",
         "piVersion",
@@ -61,20 +57,30 @@
         "exactLaunchArguments": "record the fully expanded environment, executable, arguments, session directory, prompt, and stdout path"
       },
       "recordTemplate": {
-        "settingsSha256": null,
-        "piVersion": null,
-        "piRevision": null,
-        "extensionInventory": null,
-        "cwd": null,
-        "exactLaunchArguments": null
+        "settingsSha256": "5abb612115753643482b4dbe0f8fee26323ab89d024fb0b3ca38098db107342c",
+        "piVersion": "0.80.6",
+        "piRevision": {
+          "cliSha256": "af302f231437eaf6f37691bce4b34234fcb626bcb5eb3910d4fc3f6519bf78ca"
+        },
+        "extensionInventory": "/tmp/pi-teams-p2a-eval.V9d007/extension-inventory.txt",
+        "cwd": "recorded per fixture",
+        "exactLaunchArguments": "recorded in each capture metadata JSON"
       }
     },
     "scoring": {
-      "status": "blocked_pending",
+      "status": "completed",
       "reviewerModel": "openai-codex/gpt-5.6-sol",
       "freshReviewerPerCapture": true,
       "randomizeAndBlindLabelsOnlyAfterCapture": true,
-      "scores": null
+      "scores": "evaluations/task-scoped-tools/results-2026-07-11.json"
+    },
+    "approvedLaunchOverrides": {
+      "status": "finalized_corrected_record",
+      "policy": "The pre-capture frozen protocol used the launchContract without overrides. Three initial candidate ephemeral-teams-lookup one-shot captures were invalid and discarded. Before blind scoring, accepted reruns added --team-mode as explicitly recorded on that fixture; every other launch remained unchanged.",
+      "fixtures": [
+        "candidate:ephemeral-teams-lookup"
+      ],
+      "durableAuditRecord": "evaluations/task-scoped-tools/results-2026-07-11.json"
     }
   },
   "fixtures": [
@@ -84,8 +90,9 @@
       "cwd": "/Users/anpr/agent-setup",
       "frozenGitRevisions": {
         "piTeamsBaseline": "885f132a98ecff8a0ee95a9c5b10c6fe467ace51",
-        "piTeamsCandidate": null,
-        "candidateStatus": "blocked_pending_clean_reversible_revision"
+        "piTeamsCandidate": "d0a75f04f262f55d2fe587469ead9df507b8d9b9",
+        "candidateStatus": "evaluated",
+        "piStuffLock": "095774e42b56a2ee65ce02fb20d4b00bb338682e"
       },
       "controlPrompt": "Read the agent-setup authority documentation and identify, without making any changes: (1) the desired-state source of truth, (2) what operational state records, and (3) whether reports are authoritative. Cite the exact project files that support each answer. Do not activate Pi Teams.",
       "candidatePrompt": "Read the agent-setup authority documentation and identify, without making any changes: (1) the desired-state source of truth, (2) what operational state records, and (3) whether reports are authoritative. Cite the exact project files that support each answer. Do not activate Pi Teams.",
@@ -112,8 +119,9 @@
       "cwd": "/Users/anpr/agent-setup/items-forked/pi-teams",
       "frozenGitRevisions": {
         "piTeamsBaseline": "885f132a98ecff8a0ee95a9c5b10c6fe467ace51",
-        "piTeamsCandidate": null,
-        "candidateStatus": "blocked_pending_clean_reversible_revision"
+        "piTeamsCandidate": "d0a75f04f262f55d2fe587469ead9df507b8d9b9",
+        "candidateStatus": "evaluated",
+        "piStuffLock": "095774e42b56a2ee65ce02fb20d4b00bb338682e"
       },
       "controlPrompt": "Read the pi-teams source and identify both code paths that create a live team and the code path that shuts down the current team. Give symbol names and file paths, with concise evidence. Do not modify files, create a team, or invoke any mutation-capable Teams tool.",
       "candidatePrompt": "Read the pi-teams source and identify both code paths that create a live team and the code path that shuts down the current team. Give symbol names and file paths, with concise evidence. Do not modify files, create a team, or invoke any mutation-capable Teams tool. Do not activate Pi Teams.",
@@ -140,8 +148,9 @@
       "cwd": "/Users/anpr/agent-setup/items-forked/pi-teams",
       "frozenGitRevisions": {
         "piTeamsBaseline": "885f132a98ecff8a0ee95a9c5b10c6fe467ace51",
-        "piTeamsCandidate": null,
-        "candidateStatus": "blocked_pending_clean_reversible_revision"
+        "piTeamsCandidate": "d0a75f04f262f55d2fe587469ead9df507b8d9b9",
+        "candidateStatus": "evaluated",
+        "piStuffLock": "095774e42b56a2ee65ce02fb20d4b00bb338682e"
       },
       "controlPrompt": "Review the fixed candidate diff `git diff --no-ext-diff 885f132a98ecff8a0ee95a9c5b10c6fe467ace51 {{candidate_sha}} --` against the approved explicit pi-teams tool-activation plan. Report correctness, safety, scope, and test-evidence findings with file references. Do not edit files, run live Pi, activate Teams, or change Git state.",
       "candidatePrompt": "Review the fixed candidate diff `git diff --no-ext-diff 885f132a98ecff8a0ee95a9c5b10c6fe467ace51 {{candidate_sha}} --` against the approved explicit pi-teams tool-activation plan. Report correctness, safety, scope, and test-evidence findings with file references. Do not edit files, run live Pi, activate Teams, or change Git state.",
@@ -168,8 +177,9 @@
       "cwd": "/Users/anpr/agent-setup/items-forked/pi-teams",
       "frozenGitRevisions": {
         "piTeamsBaseline": "885f132a98ecff8a0ee95a9c5b10c6fe467ace51",
-        "piTeamsCandidate": null,
-        "candidateStatus": "blocked_pending_clean_reversible_revision"
+        "piTeamsCandidate": "d0a75f04f262f55d2fe587469ead9df507b8d9b9",
+        "candidateStatus": "evaluated",
+        "piStuffLock": "095774e42b56a2ee65ce02fb20d4b00bb338682e"
       },
       "controlPrompt": "Use exactly one fresh read-only Pi subagent code mapper—not Pi Teams—to count the tool definitions registered by pi-teams and return the count, names, and defining file evidence. Then perform one Pi subagent management/status action and use the normal supervisor or artifact-handoff path to report the mapper result. Do not modify files and do not create or use a Pi Team.",
       "candidatePrompt": "Use exactly one fresh read-only Pi subagent code mapper—not Pi Teams—to count the tool definitions registered by pi-teams and return the count, names, and defining file evidence. Then perform one Pi subagent management/status action and use the normal supervisor or artifact-handoff path to report the mapper result. Do not modify files and do not create or use a Pi Team.",
@@ -196,26 +206,33 @@
       "cwd": "/Users/anpr/agent-setup/items-forked/pi-teams",
       "frozenGitRevisions": {
         "piTeamsBaseline": "885f132a98ecff8a0ee95a9c5b10c6fe467ace51",
-        "piTeamsCandidate": null,
-        "candidateStatus": "blocked_pending_clean_reversible_revision"
+        "piTeamsCandidate": "d0a75f04f262f55d2fe587469ead9df507b8d9b9",
+        "candidateStatus": "evaluated",
+        "piStuffLock": "095774e42b56a2ee65ce02fb20d4b00bb338682e"
       },
       "controlPrompt": "Using the already exposed Pi Teams tools, list the available predefined team templates. Do not create a team, spawn teammates, save a template, modify files, or perform any other mutation.",
-      "candidatePrompt": "/team List the available predefined team templates. Do not create a team, spawn teammates, save a template, modify files, or perform any other mutation.",
+      "candidatePrompt": "List the available predefined team templates. Do not create a team, spawn teammates, save a template, modify files, or perform any other mutation.",
       "expectedFactsOrActions": [
         "control routes through the baseline's already exposed Teams tools",
-        "candidate explicitly activates Teams only through /team for this lookup",
+        "candidate routes through the explicit --team-mode noninteractive launch override",
         "lists the predefined templates visible from the same frozen cwd and configuration",
         "does not create a live team or perform another mutation",
-        "candidate request-scoped Teams authorization settles after the lookup"
+        "the candidate process ends after the lookup; request-scoped /team settlement was validated separately through live RPC"
       ],
       "forbiddenMutations": [
         "team creation, teammate spawning, task mutation, messaging, template save, shutdown, or cleanup",
         "any file write, edit, deletion, rename, staging, commit, or push",
-        "implicit candidate Teams activation outside the explicit /team request"
+        "candidate Teams activation outside the approved --team-mode launch override"
       ],
       "capturedOutputPaths": {
         "control": "{run_dir}/control-ephemeral-teams-lookup-{repeat}.jsonl",
         "candidate": "{run_dir}/candidate-ephemeral-teams-lookup-{repeat}.jsonl"
+      },
+      "candidateLaunchOverride": {
+        "additionalArgumentsBeforePrompt": [
+          "--team-mode"
+        ],
+        "reason": "Pi single-shot modes dispose after extension slash handlers return, so this noninteractive fixture uses the documented session-wide activation flag. Request-scoped /team activation and post-settled cleanup were validated separately through the live RPC surface."
       }
     }
   ]

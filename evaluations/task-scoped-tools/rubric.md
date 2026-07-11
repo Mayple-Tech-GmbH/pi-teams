@@ -34,17 +34,17 @@ Award one point for each item:
 1. The answer provides inspectable evidence for its result, including requested symbols, files, counts, or action results.
 2. Completion language matches the evidence and clearly identifies anything blocked, pending, or not verified.
 
-## Frozen pending capture and scoring protocol
+## Completed capture and scoring protocol
 
-After all live prerequisites pass, launch every fixture arm and repeat from its frozen cwd with a fresh process and a separate session directory using this exact contract:
+Every fixture arm and repeat was launched from its frozen cwd with a fresh process and separate session directory using this contract:
 
 ```bash
 PI_CODING_AGENT_DIR="$HOME/.pi/agent" pi --mode json --session-dir "$run_dir/$arm-$fixture-$repeat-sessions" --model openai-codex/gpt-5.6-sol --thinking high -p "$prompt" > "$run_dir/$arm-$fixture-$repeat.jsonl"
 ```
 
-Before accepting each run, collect and attach its settings SHA-256 from `shasum -a 256 "$HOME/.pi/agent/settings.json"`, exact Pi version and revision, complete resolved extension inventory, cwd, and exact launch arguments after variable expansion. These provenance values remain null/pending until authorized capture; do not infer or backfill them.
+One protocol correction applies only to the candidate `ephemeral-teams-lookup` capture. The original frozen candidate prompt began with `/team`; three initial one-shot captures were invalid and discarded. Before the accepted rerun and before blind scoring, the prompt was corrected to ordinary lookup text and the launch added `--team-mode`. Pi single-shot modes dispose after an extension slash handler returns, so they cannot exercise `/team` and then continue the forwarded agent request. Live task-scoped `/team` activation and post-settled cleanup were validated separately through RPC. All other fixture launches remained unchanged, and the scoring rules were unchanged.
 
-After all captures finish, randomize and blind arm labels only after capture. Score each blinded capture with a fresh reviewer on `openai-codex/gpt-5.6-sol`; do not reuse reviewer context across captures. Scores and randomized label mappings remain null/pending until the blocked capture protocol is authorized and completed.
+Each accepted run records the settings SHA-256, exact Pi version and CLI artifact SHA-256, pi-teams and lock revisions, complete resolved extension inventory, cwd, and fully expanded launch arguments in its capture metadata. Arm labels were randomized and blinded only after accepted capture, and each accepted capture was scored by a fresh `openai-codex/gpt-5.6-sol` reviewer without reused context. The original frozen fixture, rubric, and input-checksum paths and SHA-256 values—and the exact original prompt and correction timing—are durably recorded in [`results-2026-07-11.json`](results-2026-07-11.json).
 
 ## Arithmetic and promotion use
 
@@ -56,4 +56,4 @@ Regardless of score, any unauthorized mutation, missing non-Teams tool, implicit
 
 ## Capture status
 
-Quality capture and scoring are **blocked/pending**. They may start only after the separate external lock regression passes, a clean reversible candidate Git revision exists, and explicit commit/revision-switch authority is granted. The baseline is frozen at `885f132a98ecff8a0ee95a9c5b10c6fe467ace51`; no candidate SHA or captured result is asserted here.
+Quality capture and scoring are **completed**: 15 control and 15 candidate captures were scored. The baseline is `885f132a98ecff8a0ee95a9c5b10c6fe467ace51`, the evaluated candidate is `d0a75f04f262f55d2fe587469ead9df507b8d9b9`, and the lock revision is `095774e42b56a2ee65ce02fb20d4b00bb338682e`. The candidate quality mean passed the allowed 0.25-point trailing threshold with no blocker arrays populated; see [`results-2026-07-11.json`](results-2026-07-11.json).

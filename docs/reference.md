@@ -66,7 +66,7 @@ A successful shutdown changes activation only for the current live team. Shuttin
 
 The activation gate covers exactly these 21 Teams tools: `team_create`, `spawn_teammate`, `spawn_lead_window`, `send_message`, `broadcast_message`, `read_inbox`, `task_create`, `task_submit_plan`, `task_evaluate_plan`, `task_list`, `task_update`, `team_shutdown`, `cleanup_agent_sessions`, `task_read`, `check_teammate`, `process_shutdown_approved`, `list_predefined_teams`, `list_predefined_agents`, `create_predefined_team`, `save_team_as_template`, and `list_runtime_teams`.
 
-pi-teams changes only those names and preserves unrelated active and inactive choices. It does not detect or override `/lock` or other profiles. `/lock` remains the separate authority for read-only enforcement. **pi-subagents is separate from pi-teams** and has its own delegation tools and lifecycle.
+pi-teams changes only those names and preserves unrelated active and inactive choices. Read-only enforcement is owned entirely by `/lock`: pi-teams never changes lock allowlists or lock call decisions. The only lock integration is a narrow, optional version-1 post-unlock lifecycle callback. After `/lock` restores its saved tool snapshot, that callback lets pi-teams reapply its own authorization state—preserving restored Teams tools when still authorized or removing them when authorization has ended. It is not lock detection, enforcement, or a generic profile manager. **pi-subagents is separate from pi-teams** and has its own delegation tools and lifecycle.
 
 ---
 
